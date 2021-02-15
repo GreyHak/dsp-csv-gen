@@ -17,6 +17,7 @@ using HarmonyLib;
 using UnityEngine;
 using System.IO;
 using BepInEx.Logging;
+using System.Security;
 
 namespace StarSectorResourceSpreadsheetGenerator
 {
@@ -26,13 +27,27 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "1.0.1.0";
+        public const string pluginVersion = "1.1.0.0";
         public static bool spreadsheetGenRequestFlag = false;
+        public static string spreadsheetFileName = "default.csv";
         new internal static ManualLogSource Logger;
+        new internal static BepInEx.Configuration.ConfigFile Config;
 
         public void Awake()
         {
             SpreadsheetGenMod.Logger = base.Logger;  // "C:\Program Files (x86)\Steam\steamapps\common\Dyson Sphere Program\BepInEx\LogOutput.log"
+            SpreadsheetGenMod.Config = base.Config;
+
+            // Determine the default spreadsheet path and configured spreadsheet path.
+            spreadsheetFileName = "DSP_Star_Sector_Resources.csv";
+            if (Environment.GetEnvironmentVariable("USERPROFILE") != null)
+            {
+                spreadsheetFileName = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Documents\" + spreadsheetFileName);
+            }
+            spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
+            Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileName + "\"");
+
+
             Harmony harmony = new Harmony(pluginGuid);
 
             System.Reflection.MethodInfo originalBegin = AccessTools.Method(typeof(GameMain), "Begin");
@@ -123,7 +138,6 @@ namespace StarSectorResourceSpreadsheetGenerator
         // Called when all planets are loaded.  Saves resource spreadsheet.
         public static void GenerateResourceSpreadsheet()
         {
-            string progress = "1";
             try
             {
                 SpreadsheetGenMod.Logger.LogInfo("Begin resource spreadsheet generation...");
@@ -235,19 +249,45 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                 }
 
-                string spreadsheetFileName = "DSP_Star_Sector_Resources.csv";
-                if (Environment.GetEnvironmentVariable("USERPROFILE") != null)
-                {
-                    spreadsheetFileName = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Documents\" + spreadsheetFileName);
-                }
-
                 File.WriteAllText(spreadsheetFileName, sb.ToString());
 
                 SpreadsheetGenMod.Logger.LogInfo("Completed saving resource spreadsheet.");
             }
+            catch (ArgumentNullException e)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: ArgumentNullException while generating and saving resource spreadsheet: " + e.Message);
+            }
+            catch (ArgumentException e)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: ArgumentException while generating and saving resource spreadsheet: " + e.Message);
+            }
+            catch (PathTooLongException e)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: PathTooLongException while generating and saving resource spreadsheet: " + e.Message);
+            }
+            catch (DirectoryNotFoundException e)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: DirectoryNotFoundException while generating and saving resource spreadsheet: " + e.Message);
+            }
+            catch (IOException e)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: IOException while generating and saving resource spreadsheet: " + e.Message);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: UnauthorizedAccessException while generating and saving resource spreadsheet: " + e.Message);
+            }
+            catch (NotSupportedException e)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: NotSupportedException while generating and saving resource spreadsheet: " + e.Message);
+            }
+            catch (SecurityException e)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: SecurityException while generating and saving resource spreadsheet: " + e.Message);
+            }
             catch
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: Exception while generating and saving resource spreadsheet. " + progress);
+                SpreadsheetGenMod.Logger.LogInfo("ERROR: Exception (catch-all) while generating and saving resource spreadsheet.");
             }
         }
     }
