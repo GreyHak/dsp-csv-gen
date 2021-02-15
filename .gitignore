@@ -1,0 +1,5 @@
+.vs
+bin/Release
+icon.pspimage
+Libraries/*.dll
+obj/Release
