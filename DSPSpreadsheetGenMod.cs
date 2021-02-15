@@ -249,6 +249,11 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                 }
 
+                // Make sure the folder we're trying to write in exists.
+                // {username}/Documents doesn't always exist on Wine platform.
+                System.IO.FileInfo file = new System.IO.FileInfo(spreadsheetFileName);
+                file.Directory.Create(); // If the directory already exists, this method does nothing.
+
                 File.WriteAllText(spreadsheetFileName, sb.ToString());
 
                 SpreadsheetGenMod.Logger.LogInfo("Completed saving resource spreadsheet.");
