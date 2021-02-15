@@ -10,39 +10,39 @@ What to know what tidally locked planets are around high-luminosity stars?  Want
 The generated spreadsheet will contain columns for the following data.
  - Planet Name
  - Star Information
-   - &nbsp; &nbsp; Star Name
-   - &nbsp; &nbsp; Star Luminosity
-   - &nbsp; &nbsp; Star Type
-   - &nbsp; &nbsp; Star Mass
-   - &nbsp; &nbsp; Star Position X, Y, Z
+   - > Star Name
+   - > Star Luminosity
+   - > Star Type
+   - > Star Mass
+   - > Star Position X, Y, Z
  - Planet Properties
-   - &nbsp; &nbsp; Wind Strength
-   - &nbsp; &nbsp; Luminosity
-   - &nbsp; &nbsp; Planet Type
-   - &nbsp; &nbsp; Land Percent
-   - &nbsp; &nbsp; Singularity (e.g. Tidally Locked)
-   - &nbsp; &nbsp; Planet/Moon
-   - &nbsp; &nbsp; Orbital Inclination
+   - > Wind Strength
+   - > Luminosity
+   - > Planet Type
+   - > Land Percent
+   - > Singularity (e.g. Tidally Locked)
+   - > Planet/Moon
+   - > Orbital Inclination
  - Rocky Planet/Moon Resources
-   - &nbsp; &nbsp; Ocean Type
-   - &nbsp; &nbsp; Iron quantity
-   - &nbsp; &nbsp; Copper quantity
-   - &nbsp; &nbsp; Silicon quantity
-   - &nbsp; &nbsp; Titanium quantity
-   - &nbsp; &nbsp; Stone quantity
-   - &nbsp; &nbsp; Coal quantity
-   - &nbsp; &nbsp; Crude oil rate
-   - &nbsp; &nbsp; Fire ice quantity
-   - &nbsp; &nbsp; Kimberlite quantity
-   - &nbsp; &nbsp; Fractal silicon quantity
-   - &nbsp; &nbsp; Organic crystal quantity
-   - &nbsp; &nbsp; Optical grating crystal quantity
-   - &nbsp; &nbsp; Spiniform stalagmite crystal quantity
-   - &nbsp; &nbsp; Unipolar magnet quantity
+   - > Ocean Type
+   - > Iron quantity
+   - > Copper quantity
+   - > Silicon quantity
+   - > Titanium quantity
+   - > Stone quantity
+   - > Coal quantity
+   - > Crude oil rate
+   - > Fire ice quantity
+   - > Kimberlite quantity
+   - > Fractal silicon quantity
+   - > Organic crystal quantity
+   - > Optical grating crystal quantity
+   - > Spiniform stalagmite crystal quantity
+   - > Unipolar magnet quantity
  - Gas Planet Resource
-   - &nbsp; &nbsp; Hydrogen rate
-   - &nbsp; &nbsp; Deuterium rate
-   - &nbsp; &nbsp; Fire ice rate
+   - > Hydrogen rate
+   - > Deuterium rate
+   - > Fire ice rate
 
 ## Usage
 Generation of the resource spreadsheet is triggered by loading a save or pausing the game.
