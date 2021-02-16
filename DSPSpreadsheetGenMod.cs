@@ -27,7 +27,8 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "1.1.3.0";
+        public const string pluginVersion = "1.1.4.0";
+        public static bool enablePlanetLoadingFlag = true;
         public static bool spreadsheetGenRequestFlag = false;
         public static string spreadsheetFileName = "default.csv";
         new internal static ManualLogSource Logger;
@@ -46,6 +47,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             }
             spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
 
+            enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", true, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
             bool enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", true, "Whether or not saving should be triggered by starting a game.").Value;
             bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", true, "Whether or not saving should be triggered by pausing the game.").Value;
 
@@ -88,6 +90,13 @@ namespace StarSectorResourceSpreadsheetGenerator
             if (GameMain.gameName == "0")
             {
                 SpreadsheetGenMod.Logger.LogInfo("Ignoring load screen.");
+                return;
+            }
+
+            if (!enablePlanetLoadingFlag)
+            {
+                SpreadsheetGenMod.Logger.LogInfo("Skipping planet load check.  Proceeding with resource spreadsheet generation.  Speadsheet will likely be incomplete.");
+                GenerateResourceSpreadsheet();
                 return;
             }
 
@@ -232,9 +241,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                             }
 
                             if (planet.veinGroups.Length == 0)
-                            {   // Theoretically this shouldn't happen.
-                                planet.Load();
-
+                            {
                                 foreach (VeinProto item in LDB.veins.dataArray)
                                 {
                                     sb.Append("Unloaded,");

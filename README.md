@@ -48,11 +48,18 @@ The generated spreadsheet will contain columns for the following data.
 Generation of the resource spreadsheet is triggered by loading a save or pausing the game.
 The game does not keep all resource information loaded.  So once spreadsheet generation is requested there is a delay of less than a minute until the .csv file is created.
 
-The output path is configurable.
-By default the spreadsheet is saved on Windows to DSP_Star_Sector_Resources.csv to your Documents folder and on Linux to just DSP_Star_Sector_Resources.csv.
-
+## Config File
 The configuration file is called greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg.  It is generated the first time you run the game with this mod installed.  On Windows 10 it is located at
-"%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg".  The spreadsheet output path can be changed by specifying a different path in this config file.
+"%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg".  
+
+### Output Path Configurable
+By default the spreadsheet is saved on Windows to DSP_Star_Sector_Resources.csv to your Documents folder and on Linux to just DSP_Star_Sector_Resources.csv.  The spreadsheet output path can be changed by specifying a different path in this config file.
+
+### Save Trigger Configurable
+By default the generation of the spreadsheet is performed when starting and pausing a game.  Both of these triggers can be enabled/disabled in the config file.
+
+### Planet Loading Configurable
+By default this mod loads all planets.  This is the only way to get all the planet resource data.  This step can be skipped if you want to save on memory.  When disabling this flag the spreadsheet will indicate "Unloaded" for all fields that are unavailable because planet loading was skipped.
 
 ## Installation
 This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5775 on Windows 10.
@@ -62,15 +69,17 @@ To manually install this mod, add the DSPResourceSpreadsheetGenMod.dll to your %
 This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderstore.io/package/ebkr/r2modman_dsp/) mod manager by clicking "Install with Mod Manager" on the [DSP Modding](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) site.
 
 ## Compatibility
-This mod works with Touhma's Galactic Scale mod, but using these mods together will dramatically increase memory usage.  Running this mod with 1024 systems has been seen to use 16GB of RAM.
+This mod works with Touhma's Galactic Scale mod, but using these mods together will dramatically increase memory usage.  Running this mod with 1024 systems has been seen to use 16GB of RAM.  If this is a problem for you, there is a config setting to disable the loading of planets.  Disabling planet loading won't produce as much information, but will save on memory.
 
 ## Open Source
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### v1.1.4
+ - Added config option to disable planet loading.
 ### v1.1.3
- - Added ability to enable and disable triggers in config file.
- - Improved capability of default save file location.
+ - Added ability to enable and disable save triggers in config file.
+ - Improved compatability of default save file location.
 ### v1.1.2
  - README-only update.  thunderstore needs to update their markdown interpreter for list subitems.
 ### v1.1.1
