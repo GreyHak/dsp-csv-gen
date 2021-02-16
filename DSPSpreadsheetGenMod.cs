@@ -27,7 +27,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "1.1.2.0";
+        public const string pluginVersion = "1.1.3.0";
         public static bool spreadsheetGenRequestFlag = false;
         public static string spreadsheetFileName = "default.csv";
         new internal static ManualLogSource Logger;
@@ -40,13 +40,15 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             // Determine the default spreadsheet path and configured spreadsheet path.
             spreadsheetFileName = "DSP_Star_Sector_Resources.csv";
-            if (Environment.GetEnvironmentVariable("USERPROFILE") != null)
+            if (Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) != "")
             {
-                spreadsheetFileName = Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Documents\" + spreadsheetFileName);
+                spreadsheetFileName = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + spreadsheetFileName;
             }
             spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
             Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileName + "\"");
 
+            bool enableOnStartTrigger = Config.Bind<bool>("Enable", "EnableOnStart", true, "Whether or not saving should be triggered by starting a game.").Value;
+            bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "EnableOnPause", true, "Whether or not saving should be triggered by pausing the game.").Value;
 
             Harmony harmony = new Harmony(pluginGuid);
 
@@ -58,8 +60,14 @@ namespace StarSectorResourceSpreadsheetGenerator
             System.Reflection.MethodInfo myQueueLoading = AccessTools.Method(typeof(SpreadsheetGenMod), "QueuePlanetLoading");
             System.Reflection.MethodInfo myNotifyLoaded = AccessTools.Method(typeof(SpreadsheetGenMod), "OnPlanetFactoryLoaded");
 
-            harmony.Patch(originalBegin, new HarmonyMethod(myQueueLoading));  // Run mine before
-            harmony.Patch(originalPause, new HarmonyMethod(myQueueLoading));  // Run mine before
+            if (enableOnStartTrigger)
+            {
+                harmony.Patch(originalBegin, new HarmonyMethod(myQueueLoading));  // Run mine before
+            }
+            if (enableOnPauseTrigger)
+            {
+                harmony.Patch(originalPause, new HarmonyMethod(myQueueLoading));  // Run mine before
+            }
             harmony.Patch(originalPlanetLoadPrim, null, new HarmonyMethod(myNotifyLoaded));  // Run mine after
 
             Logger.LogInfo("Initialization complete.");

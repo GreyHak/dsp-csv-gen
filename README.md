@@ -49,7 +49,7 @@ Generation of the resource spreadsheet is triggered by loading a save or pausing
 The game does not keep all resource information loaded.  So once spreadsheet generation is requested there is a delay of less than a minute until the .csv file is created.
 
 The output path is configurable.
-By default the spreadsheet is saved on Windows to (%USERPROFILE%\Documents\DSP_Star_Sector_Resources.csv) and on Linux to (DSP_Star_Sector_Resources.csv).
+By default the spreadsheet is saved on Windows to DSP_Star_Sector_Resources.csv to your Documents folder and on Linux to just DSP_Star_Sector_Resources.csv.
 
 The configuration file is called greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg.  It is generated the first time you run the game with this mod installed.  On Windows 10 it is located at
 "%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg".  The spreadsheet output path can be changed by specifying a different path in this config file.
@@ -66,3 +66,20 @@ This mod works with Touhma's Galactic Scale mod, but using these mods together w
 
 ## Open Source
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
+
+## Change Log
+### v1.1.3
+ - Added ability to enable and disable triggers in config file.
+ - Improved capability of default save file location.
+### v1.1.2
+ - README-only update.  thunderstore needs to update their markdown interpreter for list subitems.
+### v1.1.1
+ - Incorporated change from operinko to create the output directory if needed.
+ - Enhancement to README, most notably to include a note about memory usage when this mod is used with Touhma's Galactic Scale mod.
+### v1.1.0
+ - Added a config file for specifying the path of the output spreadsheet.
+ - Exception text is improved.
+### v1.0.1
+ - Added missing BepInEx dependency to manifest file.
+### v1.0.0
+ - Initial release.
