@@ -45,10 +45,17 @@ namespace StarSectorResourceSpreadsheetGenerator
                 spreadsheetFileName = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + spreadsheetFileName;
             }
             spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
-            Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileName + "\"");
 
-            bool enableOnStartTrigger = Config.Bind<bool>("Enable", "EnableOnStart", true, "Whether or not saving should be triggered by starting a game.").Value;
-            bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "EnableOnPause", true, "Whether or not saving should be triggered by pausing the game.").Value;
+            bool enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", true, "Whether or not saving should be triggered by starting a game.").Value;
+            bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", true, "Whether or not saving should be triggered by pausing the game.").Value;
+
+            if (!enableOnStartTrigger && !enableOnPauseTrigger)
+            {
+                Logger.LogInfo("Both save triggers disabled.  Mod effectively disabled.");
+                return;
+            }
+
+            Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileName + "\"");
 
             Harmony harmony = new Harmony(pluginGuid);
 
@@ -62,10 +69,12 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             if (enableOnStartTrigger)
             {
+                Logger.LogInfo("Enabling trigger to save on starting a game");
                 harmony.Patch(originalBegin, new HarmonyMethod(myQueueLoading));  // Run mine before
             }
             if (enableOnPauseTrigger)
             {
+                Logger.LogInfo("Enabling trigger to save on pausing a game");
                 harmony.Patch(originalPause, new HarmonyMethod(myQueueLoading));  // Run mine before
             }
             harmony.Patch(originalPlanetLoadPrim, null, new HarmonyMethod(myNotifyLoaded));  // Run mine after
