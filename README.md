@@ -10,39 +10,39 @@ What to know what tidally locked planets are around high-luminosity stars?  Want
 The generated spreadsheet will contain columns for the following data.
  - Planet Name
  - Star Information
-   - º Star Name
-   - º Star Luminosity
-   - º Star Type
-   - º Star Mass
-   - º Star Position X, Y, Z
+   - _ Star Name
+   - _ Star Luminosity
+   - _ Star Type
+   - _ Star Mass
+   - _ Star Position X, Y, Z
  - Planet Properties
-   - º Wind Strength
-   - º Luminosity
-   - º Planet Type
-   - º Land Percent
-   - º Singularity (e.g. Tidally Locked)
-   - º Planet/Moon
-   - º Orbital Inclination
+   - _ Wind Strength
+   - _ Luminosity
+   - _ Planet Type
+   - _ Land Percent
+   - _ Singularity (e.g. Tidally Locked)
+   - _ Planet/Moon
+   - _ Orbital Inclination
  - Rocky Planet/Moon Resources
-   - º Ocean Type
-   - º Iron quantity
-   - º Copper quantity
-   - º Silicon quantity
-   - º Titanium quantity
-   - º Stone quantity
-   - º Coal quantity
-   - º Crude oil rate
-   - º Fire ice quantity
-   - º Kimberlite quantity
-   - º Fractal silicon quantity
-   - º Organic crystal quantity
-   - º Optical grating crystal quantity
-   - º Spiniform stalagmite crystal quantity
-   - º Unipolar magnet quantity
+   - _ Ocean Type
+   - _ Iron quantity
+   - _ Copper quantity
+   - _ Silicon quantity
+   - _ Titanium quantity
+   - _ Stone quantity
+   - _ Coal quantity
+   - _ Crude oil rate
+   - _ Fire ice quantity
+   - _ Kimberlite quantity
+   - _ Fractal silicon quantity
+   - _ Organic crystal quantity
+   - _ Optical grating crystal quantity
+   - _ Spiniform stalagmite crystal quantity
+   - _ Unipolar magnet quantity
  - Gas Planet Resource
-   - º Hydrogen rate
-   - º Deuterium rate
-   - º Fire ice rate
+   - _ Hydrogen rate
+   - _ Deuterium rate
+   - _ Fire ice rate
 
 ## Usage
 Generation of the resource spreadsheet is triggered by loading a save or pausing the game.
