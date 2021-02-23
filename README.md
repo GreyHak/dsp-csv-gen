@@ -11,7 +11,6 @@ The generated spreadsheet will contain columns for the following data.
  - Planet Name
  - Star Information
    - _ Star Name
-   - _ Star Luminosity
    - _ Star Dyson Luminosity
    - _ Star Type
    - _ Star Mass
@@ -77,7 +76,7 @@ The source code for this mod is available for download, review and forking on Gi
 
 ## Change Log
 ### v1.1.5
- - Added column for star dyson luminosity
+ - Added column for star dyson luminosity.  Removed star luminosity to avoid confusion.
  - Adjusted the description in the manifest
  - Minor README compatibility enhancement
 ### v1.1.4

@@ -169,7 +169,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 SpreadsheetGenMod.Logger.LogInfo("Begin resource spreadsheet generation...");
 
                 var sb = new StringBuilder();
-                sb.Append("Planet Name,Star Name,Star Luminosity,Star Dyson Luminosity,Star Type,Star Mass,Star Position X,Star Position Y,Star Position Z,Wind Strength,Luminosity on Planet,Planet Type,Land Percent,Singularity,Planet/Moon,Orbit Inclination,Ocean,");
+                sb.Append("Planet Name,Star Name,Star Dyson Luminosity,Star Type,Star Mass,Star Position X,Star Position Y,Star Position Z,Wind Strength,Luminosity on Planet,Planet Type,Land Percent,Singularity,Planet/Moon,Orbit Inclination,Ocean,");
                 //sb.Append("Ocean,Iron Ore,Copper Ore,Silicon Ore,Titanium Ore,Stone Ore,Coal Ore,Crude Oil,Fire Ice,Kimberlite Ore,Fractal Silicon,Spiniform Stalagmite Crystal,Optical Grating Crystal,Bamboo,Unipolar Magnet,");
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
@@ -188,7 +188,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     {
                         sb.AppendFormat("{0},", planet.displayName);
                         sb.AppendFormat("{0},", star.displayName);
-                        sb.AppendFormat("{0},", star.luminosity);
+                        //sb.AppendFormat("{0},", star.luminosity);  // Removed to avoid confusion
                         sb.AppendFormat("{0},", star.dysonLumino);
                         sb.AppendFormat("{0},", star.typeString);
                         sb.AppendFormat("{0},", star.mass);
