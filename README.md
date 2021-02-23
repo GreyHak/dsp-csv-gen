@@ -12,6 +12,7 @@ The generated spreadsheet will contain columns for the following data.
  - Star Information
    - _ Star Name
    - _ Star Luminosity
+   - _ Star Dyson Luminosity
    - _ Star Type
    - _ Star Mass
    - _ Star Position X, Y, Z
@@ -69,12 +70,16 @@ To manually install this mod, add the DSPResourceSpreadsheetGenMod.dll to your %
 This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderstore.io/package/ebkr/r2modman_dsp/) mod manager by clicking "Install with Mod Manager" on the [DSP Modding](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) site.
 
 ## Compatibility
-This mod works with Touhma's Galactic Scale mod, but using these mods together will dramatically increase memory usage.  Running this mod with 1024 systems has been seen to use 16GB of RAM.  If this is a problem for you, there is a config setting to disable the loading of planets.  Disabling planet loading won't produce as much information, but will save on memory.
+This mod works with Touhma's Galactic Scale mod, but using these mods together will dramatically increase memory usage.  Running this mod with 1024 systems has been seen to use 16GB of RAM.  If this is a problem for you, there is a config setting to disable the loading of planets.  Disabling planet loading won't produce as much information, but will save on memory.  With 64 star systems this mod uses about 1.7GB.
 
 ## Open Source
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### v1.1.5
+ - Added column for star dyson luminosity
+ - Adjusted the description in the manifest
+ - Minor README compatibility enhancement
 ### v1.1.4
  - Added config option to disable planet loading.
 ### v1.1.3

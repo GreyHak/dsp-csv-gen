@@ -1,8 +1,8 @@
 {
     "name": "DSP_Star_Sector_Resource_Spreadsheet_Generator",
-    "version_number": "1.1.4",
+    "version_number": "1.1.5",
     "website_url": "https://github.com/GreyHak/dsp-csv-gen",
-    "description": "Mod for Dyson Sphere Program will generate a spreadsheet of all resources in a star sector.",
+    "description": "Generates a spreadsheet of all resources in the star sector.",
     "dependencies": [
         "xiaoye97-BepInEx-5.4.5"
     ]
