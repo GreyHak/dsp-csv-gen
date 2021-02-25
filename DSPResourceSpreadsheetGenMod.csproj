@@ -54,6 +54,9 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>Libraries\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>Libraries\UnityEngine.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DSPSpreadsheetGenMod.cs" />

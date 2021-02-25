@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using BepInEx;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.UI;
 using System.IO;
 using BepInEx.Logging;
 using System.Security;
@@ -27,7 +28,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "1.1.5.0";
+        public const string pluginVersion = "1.2.0.0";
         public static bool enablePlanetLoadingFlag = true;
         public static bool spreadsheetGenRequestFlag = false;
         public static string spreadsheetFileName = "default.csv";
@@ -48,26 +49,17 @@ namespace StarSectorResourceSpreadsheetGenerator
             spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
 
             enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", true, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
-            bool enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", true, "Whether or not saving should be triggered by starting a game.").Value;
-            bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", true, "Whether or not saving should be triggered by pausing the game.").Value;
-
-            if (!enableOnStartTrigger && !enableOnPauseTrigger)
-            {
-                Logger.LogInfo("Both save triggers disabled.  Mod effectively disabled.");
-                return;
-            }
+            bool enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", false, "Whether or not saving should be triggered by starting a game.").Value;
+            bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", false, "Whether or not saving should be triggered by pausing the game.").Value;
 
             Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileName + "\"");
 
             Harmony harmony = new Harmony(pluginGuid);
+            harmony.PatchAll(typeof(SpreadsheetGenMod));
 
             System.Reflection.MethodInfo originalBegin = AccessTools.Method(typeof(GameMain), "Begin");
             System.Reflection.MethodInfo originalPause = AccessTools.Method(typeof(GameMain), "Pause");
-            System.Reflection.MethodInfo originalPlanetLoadPrim = AccessTools.Method(typeof(PlanetData), "NotifyLoaded");  // This one works for each planet with a delay. This acts more like a reoccuring interval even onces the requested loads are complete.
-            System.Reflection.MethodInfo originalPlanetLoadAlt = AccessTools.Method(typeof(PlanetAlgorithm), "GenerateVeins");  // This one works for each planet immediately.
-
             System.Reflection.MethodInfo myQueueLoading = AccessTools.Method(typeof(SpreadsheetGenMod), "QueuePlanetLoading");
-            System.Reflection.MethodInfo myNotifyLoaded = AccessTools.Method(typeof(SpreadsheetGenMod), "OnPlanetFactoryLoaded");
 
             if (enableOnStartTrigger)
             {
@@ -79,7 +71,6 @@ namespace StarSectorResourceSpreadsheetGenerator
                 Logger.LogInfo("Enabling trigger to save on pausing a game");
                 harmony.Patch(originalPause, new HarmonyMethod(myQueueLoading));  // Run mine before
             }
-            harmony.Patch(originalPlanetLoadPrim, null, new HarmonyMethod(myNotifyLoaded));  // Run mine after
 
             Logger.LogInfo("Initialization complete.");
         }
@@ -132,7 +123,10 @@ namespace StarSectorResourceSpreadsheetGenerator
         }
 
         // Called when each planet loads.  When all planets are loaded, will call GenerateResourceSpreadsheet().
-        public static void OnPlanetFactoryLoaded()
+        //[HarmonyPrefix, HarmonyPatch(typeof(PlanetData), "NotifyLoaded")]  // This one works for each planet with a delay. This acts more like a reoccuring interval even onces the requested loads are complete.
+        //public static void PlanetData_NotifyLoaded_Prefix()
+        [HarmonyPostfix, HarmonyPatch(typeof(PlanetAlgorithm), "GenerateVeins")]  // This one works for each planet immediately.
+        public static void PlanetAlgorithm_GenerateVeins_Postfix()
         {
             //SpreadsheetGenMod.Logger.LogInfo("Planet loaded.");
 
@@ -140,9 +134,11 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 SpreadsheetGenMod.Logger.LogInfo("Checking if there are still unloaded planets...");
 
+                int planetCount = 0;
                 uint unloadedPlanetCount = 0;
                 foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
                 {
+                    planetCount += star.planets.Length;
                     foreach (PlanetData planet in star.planets)
                     {
                         if ((planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0))
@@ -152,11 +148,14 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                 }
 
+                progressImage.fillAmount = ((float)planetCount - unloadedPlanetCount) / planetCount;
+
                 if (unloadedPlanetCount == 0)
                 {
                     SpreadsheetGenMod.spreadsheetGenRequestFlag = false;
                     SpreadsheetGenMod.Logger.LogInfo("Planet loading completed.  Proceeding with resource spreadsheet generation.");
                     GenerateResourceSpreadsheet();
+                    progressImage.fillAmount = 0;
                 }
             }
         }
@@ -319,6 +318,86 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 SpreadsheetGenMod.Logger.LogInfo("ERROR: Exception (catch-all) while generating and saving resource spreadsheet.");
             }
+        }
+
+        public static RectTransform triggerButton;
+        public static Sprite triggerSprite;
+        public static Image progressImage;
+
+        [HarmonyPrefix, HarmonyPatch(typeof(GameMain), "Begin")]
+        public static void GameMain_Begin_Prefix()
+        {
+            SpreadsheetGenMod.Logger.LogInfo("Begin");
+            if (GameMain.instance != null && GameObject.Find("Game Menu/button-1-bg") && !GameObject.Find("greyhak-csv-trigger-button"))
+            {
+                SpreadsheetGenMod.Logger.LogInfo("Loading button");
+                RectTransform parent = GameObject.Find("Game Menu").GetComponent<RectTransform>();
+                RectTransform prefab = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>();
+                Vector3 referencePosition = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>().localPosition;
+                triggerButton = GameObject.Instantiate<RectTransform>(prefab);
+                triggerButton.gameObject.name = "greyhak-csv-trigger-button";
+                triggerButton.GetComponent<UIButton>().tips.tipTitle = "Spreadsheet Generation";
+                triggerButton.GetComponent<UIButton>().tips.tipText = "Click to generate resource spreadsheet.";
+                triggerButton.GetComponent<UIButton>().tips.delay = 0f;
+                triggerButton.transform.Find("button-1/icon").GetComponent<Image>().sprite = GetSprite();
+                triggerButton.SetParent(parent);
+                triggerButton.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+                triggerButton.localPosition = new Vector3(referencePosition.x + 145f, referencePosition.y + 87f, referencePosition.z);
+                triggerButton.GetComponent<UIButton>().OnPointerDown(null);
+                triggerButton.GetComponent<UIButton>().OnPointerEnter(null);
+                triggerButton.GetComponent<UIButton>().button.onClick.AddListener(() =>
+                {
+                    QueuePlanetLoading();
+                });
+
+                Image prefabProgress = GameObject.Find("tech-progress").GetComponent<Image>();
+                progressImage = GameObject.Instantiate<Image>(prefabProgress);
+                progressImage.gameObject.name = "greyhak-cvs-trigger-image";
+                progressImage.fillAmount = 0.0f;
+                //progressImage.color = new Color(0.2f, 0.2f, 1);
+                progressImage.type = Image.Type.Filled;
+                progressImage.rectTransform.SetParent(parent);
+                progressImage.rectTransform.localScale = new Vector3(3.0f, 3.0f, 3.0f);
+                progressImage.rectTransform.localPosition = new Vector3(referencePosition.x + 145.5f, referencePosition.y + 86.6f, referencePosition.z);
+
+                // Switch from circle-thin to round-50px-border
+                Sprite sprite = Resources.Load<Sprite>("UI/Textures/Sprites/round-50px-border");
+                progressImage.sprite = GameObject.Instantiate<Sprite>(sprite);
+                SpreadsheetGenMod.Logger.LogInfo("Button load complete");
+            }
+        }
+
+        public static Sprite GetSprite()
+        {
+            Texture2D tex = new Texture2D(48, 48, TextureFormat.RGBA32, false);
+            Color color = new Color(1, 1, 1, 1);
+
+            // Draw a plane like the one re[resending drones in the Mecha Panel...
+            for (int x = 0; x < 48; x++)
+            {
+                for (int y = 0; y < 48; y++)
+                {
+                    if (((x >= 3) && (x <= 44) && (y >= 3) && (y <= 5)) ||  // top
+                        ((x >= 3) && (x <= 44) && (y >= 33) && (y <= 36)) ||
+                        ((x >= 3) && (x <= 44) && (y >= 42) && (y <= 44)) ||
+                        ((x >= 2) && (x <= 5) && (y >= 3) && (y <= 44)) ||  // left
+                        ((x >= 12) && (x <= 14) && (y >= 3) && (y <= 44)) ||
+                        ((x >= 27) && (x <= 29) && (y >= 3) && (y <= 44)) ||
+                        ((x >= 42) && (x <= 45) && (y >= 3) && (y <= 44)))
+                    {
+                        tex.SetPixel(x, y, color);
+                    }
+                    else
+                    {
+                        tex.SetPixel(x, y, new Color(0, 0, 0, 0));
+                    }
+                }
+            }
+
+            tex.name = "greyhak-cvs-trigger-icon";
+            tex.Apply();
+
+            return Sprite.Create(tex, new Rect(0f, 0f, 48f, 48f), new Vector2(0f, 0f), 1000);
         }
     }
 }

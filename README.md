@@ -45,7 +45,9 @@ The generated spreadsheet will contain columns for the following data.
    - _ Fire ice rate
 
 ## Usage
-Generation of the resource spreadsheet is triggered by loading a save or pausing the game.
+Generation of the resource spreadsheet is triggered with a button click, by loading a save or by pausing the game.
+![TriggerButton.jpg](https://raw.githubusercontent.com/GreyHak/dsp-csv-gen/master/TriggerButton.jpg)
+
 The game does not keep all resource information loaded.  So once spreadsheet generation is requested there is a delay of less than a minute until the .csv file is created.
 
 ## Config File
@@ -75,7 +77,8 @@ This mod works with Touhma's Galactic Scale mod, but using these mods together w
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
-### v1.1.5
+### v1.2.0
+ - Added button to HUD to trigger spreadsheet generation.  Button will show the progress of loading planets.  So the two prior triggers (game load and pause) are now disabled by default.
  - Added column for star dyson luminosity.  Removed star luminosity to avoid confusion.
  - Adjusted the description in the manifest
  - Minor README compatibility enhancement
