@@ -81,8 +81,12 @@ This mod works with Touhma's Galactic Scale mod, but using these mods together w
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
-### Next
- - Added bug report link to this README.
+### v1.3.0
+ - Added two patches to correct for bugs in the original game, bugs which cause problems when exiting a game to the load menu while planets/factories are being loaded.  One of these bugs results in an exception being thrown.  Another results in all local planets being colored magenta.  There's a third bug in the original game which occurs in the vegetable generation, but results in an exception which doesn't appear to be causing issues, so has been left alone.
+ - Cancel spreadsheet generation when a game ends.
+ - Reset progress circle when a new game is loaded while generation was in progress for the old game.
+ - Added bug reporting link to this README.
+ - Improvement in identifying load menu game.
 ### v1.2.0
  - Added button to HUD to trigger spreadsheet generation.  Button will show the progress of loading planets.  So the two prior triggers (game load and pause) are now disabled by default.
  - Added column for star dyson luminosity.  Removed star luminosity to avoid confusion.

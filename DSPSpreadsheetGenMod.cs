@@ -19,6 +19,7 @@ using UnityEngine.UI;
 using System.IO;
 using BepInEx.Logging;
 using System.Security;
+using System.Threading;
 //using System.Security.Permissions;
 
 //[module: UnverifiableCode]
@@ -54,8 +55,8 @@ namespace StarSectorResourceSpreadsheetGenerator
             spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
 
             enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", true, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
-            bool enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", false, "Whether or not saving should be triggered by starting a game.").Value;
-            bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", false, "Whether or not saving should be triggered by pausing the game.").Value;
+            bool enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", false, "Whether or not spreadsheet generation should be triggered by starting a game.").Value;
+            bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", false, "Whether or not spreadsheet generation should be triggered by pausing the game.").Value;
 
             Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileName + "\"");
 
@@ -83,7 +84,7 @@ namespace StarSectorResourceSpreadsheetGenerator
         // Called on save load and game pause.  Queues planet loading which will trigger OnFactoryLoaded().
         public static void QueuePlanetLoading()
         {
-            if (GameMain.gameName == "0")
+            if (DSPGame.IsMenuDemo)
             {
                 Logger.LogInfo("Ignoring load screen.");
                 return;
@@ -123,19 +124,103 @@ namespace StarSectorResourceSpreadsheetGenerator
                 var sb = new StringBuilder();
                 sb.AppendFormat("Requested {0} planets be loaded.  Waiting for planets to load.", loadRequests);
                 Logger.LogInfo(sb.ToString());
-                SpreadsheetGenMod.spreadsheetGenRequestFlag = true;
+                spreadsheetGenRequestFlag = true;
             }
         }
 
-        // Called when each planet loads.  When all planets are loaded, will call GenerateResourceSpreadsheet().
-        //[HarmonyPrefix, HarmonyPatch(typeof(PlanetData), "NotifyLoaded")]  // This one works for each planet with a delay. This acts more like a reoccuring interval even onces the requested loads are complete.
-        //public static void PlanetData_NotifyLoaded_Prefix()
-        [HarmonyPostfix, HarmonyPatch(typeof(PlanetAlgorithm), "GenerateVeins")]  // This one works for each planet immediately.
+        [HarmonyPrefix, HarmonyPatch(typeof(GameMain), "End")]
+        public static void GameMain_End_Prefix()
+        {
+            spreadsheetGenRequestFlag = false;
+
+            /******************************************************************/
+            /* The code below fixes a bug in the original game which this mod */
+            /* just makes appear more easily.  The original game doesn't      */
+            /* properly handle PlanetModelingManager resetting when a game    */
+            /* ends.  Such resetting is only needed when a planet/factory is  */
+            /* being loaded, a rare occurance if it weren't for this mod.     */
+            /******************************************************************/
+
+            if (PlanetModelingManager.genPlanetReqList.Count == 0 &&
+                PlanetModelingManager.fctPlanetReqList.Count == 0 &&
+                PlanetModelingManager.modPlanetReqList.Count == 0)
+            {
+                Logger.LogInfo("Planet modeling reset is not needed.");
+                return;
+            }
+
+            Logger.LogInfo("Stopping planet modeling thread.");
+            PlanetModelingManager.EndPlanetComputeThread();
+            Thread.Sleep(100);
+
+            uint sleepIterationCount = 1;
+            while (PlanetModelingManager.planetComputeThreadFlag == PlanetModelingManager.ThreadFlag.Ending &&
+                ++sleepIterationCount < 100)  // Don't wait more than 10 seconds.  (It shouldn't even enter this loop.)
+            {
+                Thread.Sleep(100);
+            }
+
+            Logger.LogInfo("Clearing planet modeling queues.");
+            PlanetModelingManager.genPlanetReqList.Clear();  // RequestLoadStar or RequestLoadPlanet -> PlanetComputeThreadMain
+            PlanetModelingManager.fctPlanetReqList.Clear();  // RequestLoadPlanetFactory -> LoadingPlanetFactoryCoroutine
+            PlanetModelingManager.modPlanetReqList.Clear();  // ModelingPlanetCoroutine -> ModelingPlanetMain
+
+            if (PlanetModelingManager.currentModelingPlanet != null)
+            {
+                Logger.LogInfo("Cancelling planet modeling for " + PlanetModelingManager.currentModelingPlanet.name);
+                PlanetModelingManager.currentModelingPlanet.Unload();
+                PlanetModelingManager.currentModelingPlanet.factoryLoaded = false;
+                PlanetModelingManager.currentModelingPlanet = null;
+                PlanetModelingManager.currentModelingStage = 0;
+                PlanetModelingManager.currentModelingSeamNormal = 0;
+            }
+
+            if (PlanetModelingManager.currentFactingPlanet != null)
+            {
+                Logger.LogInfo("Cancelling planet factory modeling for " + PlanetModelingManager.currentFactingPlanet.name);
+                PlanetModelingManager.currentFactingPlanet.UnloadFactory();
+                PlanetModelingManager.currentFactingPlanet.factoryLoaded = false;
+                PlanetModelingManager.currentFactingPlanet = null;
+                PlanetModelingManager.currentFactingStage = 0;
+            }
+
+            Logger.LogInfo("Resetting planet modeling manager so we don't get a magenta planet when a new game begins.");
+            for (int num57 = 0; num57 < PlanetModelingManager.tmpMeshList.Count; num57++)
+            {
+                UnityEngine.Object.Destroy(PlanetModelingManager.tmpMeshList[num57]);
+            }
+            UnityEngine.Object.Destroy(PlanetModelingManager.tmpPlanetGameObject);
+            PlanetModelingManager.tmpPlanetGameObject = null;
+            PlanetModelingManager.tmpPlanetBodyGameObject = null;
+            PlanetModelingManager.tmpPlanetReformGameObject = null;
+            PlanetModelingManager.tmpPlanetReformRenderer = null;
+            PlanetModelingManager.tmpMeshList.Clear();
+            PlanetModelingManager.tmpTris.Clear();
+            PlanetModelingManager.tmpVerts.Clear();
+            PlanetModelingManager.tmpNorms.Clear();
+            PlanetModelingManager.tmpTgnts.Clear();
+            PlanetModelingManager.tmpUvs.Clear();
+            PlanetModelingManager.tmpUv2s.Clear();
+            PlanetModelingManager.currentModelingPlanet = null;
+            PlanetModelingManager.currentModelingStage = 0;
+            PlanetModelingManager.currentModelingSeamNormal = 0;
+
+            Logger.LogInfo("Restarting planet modeling thread.");
+            PlanetModelingManager.StartPlanetComputeThread();
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(PlanetData), "NotifyLoaded")]
+        public static void PlanetData_NotifyLoaded_Prefix()
+        {
+            Logger.LogInfo("Planet loaded.");
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(PlanetAlgorithm), "GenerateVeins")]
         public static void PlanetAlgorithm_GenerateVeins_Postfix()
         {
-            //Logger.LogInfo("Planet loaded.");
+            //Logger.LogInfo("Veins generated.");
 
-            if (SpreadsheetGenMod.spreadsheetGenRequestFlag)
+            if (spreadsheetGenRequestFlag)
             {
                 Logger.LogInfo("Checking if there are still unloaded planets...");
 
@@ -157,7 +242,7 @@ namespace StarSectorResourceSpreadsheetGenerator
 
                 if (unloadedPlanetCount == 0)
                 {
-                    SpreadsheetGenMod.spreadsheetGenRequestFlag = false;
+                    spreadsheetGenRequestFlag = false;
                     Logger.LogInfo("Planet loading completed.  Proceeding with resource spreadsheet generation.");
                     GenerateResourceSpreadsheet();
                     progressImage.fillAmount = 0;
@@ -332,43 +417,50 @@ namespace StarSectorResourceSpreadsheetGenerator
         [HarmonyPrefix, HarmonyPatch(typeof(GameMain), "Begin")]
         public static void GameMain_Begin_Prefix()
         {
-            Logger.LogInfo("Begin");
-            if (GameMain.instance != null && GameObject.Find("Game Menu/button-1-bg") && !GameObject.Find("greyhak-csv-trigger-button"))
+            Logger.LogInfo("Game beginning");
+            if (GameMain.instance != null && GameObject.Find("Game Menu/button-1-bg"))
             {
-                Logger.LogInfo("Loading button");
-                RectTransform parent = GameObject.Find("Game Menu").GetComponent<RectTransform>();
-                RectTransform prefab = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>();
-                Vector3 referencePosition = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>().localPosition;
-                triggerButton = GameObject.Instantiate<RectTransform>(prefab);
-                triggerButton.gameObject.name = "greyhak-csv-trigger-button";
-                triggerButton.GetComponent<UIButton>().tips.tipTitle = "Spreadsheet Generation";
-                triggerButton.GetComponent<UIButton>().tips.tipText = "Click to generate resource spreadsheet.";
-                triggerButton.GetComponent<UIButton>().tips.delay = 0f;
-                triggerButton.transform.Find("button-1/icon").GetComponent<Image>().sprite = GetSprite();
-                triggerButton.SetParent(parent);
-                triggerButton.localScale = new Vector3(0.35f, 0.35f, 0.35f);
-                triggerButton.localPosition = new Vector3(referencePosition.x + 145f, referencePosition.y + 87f, referencePosition.z);
-                triggerButton.GetComponent<UIButton>().OnPointerDown(null);
-                triggerButton.GetComponent<UIButton>().OnPointerEnter(null);
-                triggerButton.GetComponent<UIButton>().button.onClick.AddListener(() =>
+                if (GameObject.Find("greyhak-csv-trigger-button"))
                 {
-                    QueuePlanetLoading();
-                });
+                    progressImage.fillAmount = 0;
+                }
+                else
+                {
+                    Logger.LogInfo("Loading button");
+                    RectTransform parent = GameObject.Find("Game Menu").GetComponent<RectTransform>();
+                    RectTransform prefab = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>();
+                    Vector3 referencePosition = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>().localPosition;
+                    triggerButton = GameObject.Instantiate<RectTransform>(prefab);
+                    triggerButton.gameObject.name = "greyhak-csv-trigger-button";
+                    triggerButton.GetComponent<UIButton>().tips.tipTitle = "Spreadsheet Generation";
+                    triggerButton.GetComponent<UIButton>().tips.tipText = "Click to generate resource spreadsheet.";
+                    triggerButton.GetComponent<UIButton>().tips.delay = 0f;
+                    triggerButton.transform.Find("button-1/icon").GetComponent<Image>().sprite = GetSprite();
+                    triggerButton.SetParent(parent);
+                    triggerButton.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+                    triggerButton.localPosition = new Vector3(referencePosition.x + 145f, referencePosition.y + 87f, referencePosition.z);
+                    triggerButton.GetComponent<UIButton>().OnPointerDown(null);
+                    triggerButton.GetComponent<UIButton>().OnPointerEnter(null);
+                    triggerButton.GetComponent<UIButton>().button.onClick.AddListener(() =>
+                    {
+                        QueuePlanetLoading();
+                    });
 
-                Image prefabProgress = GameObject.Find("tech-progress").GetComponent<Image>();
-                progressImage = GameObject.Instantiate<Image>(prefabProgress);
-                progressImage.gameObject.name = "greyhak-cvs-trigger-image";
-                progressImage.fillAmount = 0.0f;
-                //progressImage.color = new Color(0.2f, 0.2f, 1);
-                progressImage.type = Image.Type.Filled;
-                progressImage.rectTransform.SetParent(parent);
-                progressImage.rectTransform.localScale = new Vector3(3.0f, 3.0f, 3.0f);
-                progressImage.rectTransform.localPosition = new Vector3(referencePosition.x + 145.5f, referencePosition.y + 86.6f, referencePosition.z);
+                    Image prefabProgress = GameObject.Find("tech-progress").GetComponent<Image>();
+                    progressImage = GameObject.Instantiate<Image>(prefabProgress);
+                    progressImage.gameObject.name = "greyhak-cvs-trigger-image";
+                    progressImage.fillAmount = 0.0f;
+                    //progressImage.color = new Color(0.2f, 0.2f, 1);
+                    progressImage.type = Image.Type.Filled;
+                    progressImage.rectTransform.SetParent(parent);
+                    progressImage.rectTransform.localScale = new Vector3(3.0f, 3.0f, 3.0f);
+                    progressImage.rectTransform.localPosition = new Vector3(referencePosition.x + 145.5f, referencePosition.y + 86.6f, referencePosition.z);
 
-                // Switch from circle-thin to round-50px-border
-                Sprite sprite = Resources.Load<Sprite>("UI/Textures/Sprites/round-50px-border");
-                progressImage.sprite = GameObject.Instantiate<Sprite>(sprite);
-                Logger.LogInfo("Button load complete");
+                    // Switch from circle-thin to round-50px-border
+                    Sprite sprite = Resources.Load<Sprite>("UI/Textures/Sprites/round-50px-border");
+                    progressImage.sprite = GameObject.Instantiate<Sprite>(sprite);
+                    Logger.LogInfo("Button load complete");
+                }
             }
         }
 
@@ -403,6 +495,28 @@ namespace StarSectorResourceSpreadsheetGenerator
             tex.Apply();
 
             return Sprite.Create(tex, new Rect(0f, 0f, 48f, 48f), new Vector2(0f, 0f), 1000);
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(PlanetModelingManager), "ModelingPlanetMain")]
+        public static bool PlanetModelingManager_ModelingPlanetMain_Prefix(PlanetData planet)
+        {
+            /******************************************************************/
+            /* This patch corrects for a bug in the original game.  Hopefully */
+            /* the bug fix handled by GameMain_End_Prefix() above will make   */
+            /* this patch unnecessary, but it's here just in case.            */
+            /******************************************************************/
+
+            if (PlanetModelingManager.currentModelingPlanet != null && PlanetModelingManager.currentModelingStage == 2 && planet.data == null)
+            {
+                Logger.LogInfo("PlanetRawData null for planet " + planet.name);
+                PlanetModelingManager.currentModelingPlanet.Unload();
+                PlanetModelingManager.currentModelingPlanet.factoryLoaded = false;
+                PlanetModelingManager.currentModelingPlanet = null;
+                PlanetModelingManager.currentModelingStage = 0;
+                PlanetModelingManager.currentModelingSeamNormal = 0;
+                return false;
+            }
+            return true;
         }
     }
 }
