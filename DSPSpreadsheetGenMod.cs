@@ -19,7 +19,12 @@ using UnityEngine.UI;
 using System.IO;
 using BepInEx.Logging;
 using System.Security;
+//using System.Security.Permissions;
 
+//[module: UnverifiableCode]
+//#pragma warning disable CS0618 // Type or member is obsolete
+//[assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
+//#pragma warning restore CS0618 // Type or member is obsolete
 namespace StarSectorResourceSpreadsheetGenerator
 {
     [BepInPlugin(pluginGuid, pluginName, pluginVersion)]
@@ -101,7 +106,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     if ((planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0))
                     {
                         // PlanetModelingManager.PlanetComputeThreadMain (static, but private) -> PlanetAlgorithm.GenerateVeins
-                        //PlanetModelingManager.Algorithm(planet).GenerateVeins(false);  // Fails when called directly because something is null.
+                        // Unable to call GenerateVeins directly because it depends on PlanetRawData which isn't available.
                         planet.Load();
                         loadRequests++;
                     }

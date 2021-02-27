@@ -6,6 +6,10 @@ This mod generates a comma-seperated-values, csv, file containing all the resour
 
 What to know what tidally locked planets are around high-luminosity stars?  Want to know what system has spinform stalagmite crystals, fractal silicon and crude oil to make particle broadband?  This mod is for you.
 
+If you like this mod, please click the thumbs up at the [top of the page](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) (next to the Total rating).  That would be a nice thank you for me, and help other people to find a mod you enjoy.
+
+If you have issues with this mod, please report them on [GitHub](https://github.com/GreyHak/dsp-csv-gen/issues).  I try to respond within 12 hours.
+
 ## Exported Details
 The generated spreadsheet will contain columns for the following data.
  - Planet Name
@@ -77,6 +81,8 @@ This mod works with Touhma's Galactic Scale mod, but using these mods together w
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### Next
+ - Added bug report link to this README.
 ### v1.2.0
  - Added button to HUD to trigger spreadsheet generation.  Button will show the progress of loading planets.  So the two prior triggers (game load and pause) are now disabled by default.
  - Added column for star dyson luminosity.  Removed star luminosity to avoid confusion.

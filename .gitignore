@@ -1,5 +1,7 @@
 .vs
+bin/Debug
 bin/Release
 icon.pspimage
 Libraries/*.dll
+obj/Debug
 obj/Release

@@ -64,6 +64,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>COPY "$(ProjectDir)\bin\Release\DSPResourceSpreadsheetGenMod.dll" "C:\Program Files (x86)\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins"</PostBuildEvent>
+    <PostBuildEvent>COPY $(TargetPath) "%25ProgramFiles(x86)%25\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins"</PostBuildEvent>
   </PropertyGroup>
 </Project>
