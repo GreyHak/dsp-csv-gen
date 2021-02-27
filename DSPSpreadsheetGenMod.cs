@@ -85,18 +85,18 @@ namespace StarSectorResourceSpreadsheetGenerator
         {
             if (GameMain.gameName == "0")
             {
-                SpreadsheetGenMod.Logger.LogInfo("Ignoring load screen.");
+                Logger.LogInfo("Ignoring load screen.");
                 return;
             }
 
             if (!enablePlanetLoadingFlag)
             {
-                SpreadsheetGenMod.Logger.LogInfo("Skipping planet load check.  Proceeding with resource spreadsheet generation.  Speadsheet will likely be incomplete.");
+                Logger.LogInfo("Skipping planet load check.  Proceeding with resource spreadsheet generation.  Speadsheet will likely be incomplete.");
                 GenerateResourceSpreadsheet();
                 return;
             }
 
-            SpreadsheetGenMod.Logger.LogInfo("Checking for planets to load...");
+            Logger.LogInfo("Checking for planets to load...");
 
             uint loadRequests = 0;
             foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
@@ -115,14 +115,14 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             if (loadRequests == 0)
             {
-                SpreadsheetGenMod.Logger.LogInfo("Planets already loaded.  Proceeding with resource spreadsheet generation.");
+                Logger.LogInfo("Planets already loaded.  Proceeding with resource spreadsheet generation.");
                 GenerateResourceSpreadsheet();
             }
             else
             {
                 var sb = new StringBuilder();
                 sb.AppendFormat("Requested {0} planets be loaded.  Waiting for planets to load.", loadRequests);
-                SpreadsheetGenMod.Logger.LogInfo(sb.ToString());
+                Logger.LogInfo(sb.ToString());
                 SpreadsheetGenMod.spreadsheetGenRequestFlag = true;
             }
         }
@@ -133,11 +133,11 @@ namespace StarSectorResourceSpreadsheetGenerator
         [HarmonyPostfix, HarmonyPatch(typeof(PlanetAlgorithm), "GenerateVeins")]  // This one works for each planet immediately.
         public static void PlanetAlgorithm_GenerateVeins_Postfix()
         {
-            //SpreadsheetGenMod.Logger.LogInfo("Planet loaded.");
+            //Logger.LogInfo("Planet loaded.");
 
             if (SpreadsheetGenMod.spreadsheetGenRequestFlag)
             {
-                SpreadsheetGenMod.Logger.LogInfo("Checking if there are still unloaded planets...");
+                Logger.LogInfo("Checking if there are still unloaded planets...");
 
                 int planetCount = 0;
                 uint unloadedPlanetCount = 0;
@@ -158,7 +158,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 if (unloadedPlanetCount == 0)
                 {
                     SpreadsheetGenMod.spreadsheetGenRequestFlag = false;
-                    SpreadsheetGenMod.Logger.LogInfo("Planet loading completed.  Proceeding with resource spreadsheet generation.");
+                    Logger.LogInfo("Planet loading completed.  Proceeding with resource spreadsheet generation.");
                     GenerateResourceSpreadsheet();
                     progressImage.fillAmount = 0;
                 }
@@ -170,7 +170,7 @@ namespace StarSectorResourceSpreadsheetGenerator
         {
             try
             {
-                SpreadsheetGenMod.Logger.LogInfo("Begin resource spreadsheet generation...");
+                Logger.LogInfo("Begin resource spreadsheet generation...");
 
                 var sb = new StringBuilder();
                 sb.Append("Planet Name,Star Name,Star Dyson Luminosity,Star Type,Star Mass,Star Position X,Star Position Y,Star Position Z,Wind Strength,Luminosity on Planet,Planet Type,Land Percent,Singularity,Planet/Moon,Orbit Inclination,Ocean,");
@@ -285,43 +285,43 @@ namespace StarSectorResourceSpreadsheetGenerator
 
                 File.WriteAllText(spreadsheetFileName, sb.ToString());
 
-                SpreadsheetGenMod.Logger.LogInfo("Completed saving resource spreadsheet.");
+                Logger.LogInfo("Completed saving resource spreadsheet.");
             }
             catch (ArgumentNullException e)
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: ArgumentNullException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: ArgumentNullException while generating and saving resource spreadsheet: " + e.Message);
             }
             catch (ArgumentException e)
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: ArgumentException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: ArgumentException while generating and saving resource spreadsheet: " + e.Message);
             }
             catch (PathTooLongException e)
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: PathTooLongException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: PathTooLongException while generating and saving resource spreadsheet: " + e.Message);
             }
             catch (DirectoryNotFoundException e)
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: DirectoryNotFoundException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: DirectoryNotFoundException while generating and saving resource spreadsheet: " + e.Message);
             }
             catch (IOException e)
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: IOException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: IOException while generating and saving resource spreadsheet: " + e.Message);
             }
             catch (UnauthorizedAccessException e)
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: UnauthorizedAccessException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: UnauthorizedAccessException while generating and saving resource spreadsheet: " + e.Message);
             }
             catch (NotSupportedException e)
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: NotSupportedException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: NotSupportedException while generating and saving resource spreadsheet: " + e.Message);
             }
             catch (SecurityException e)
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: SecurityException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: SecurityException while generating and saving resource spreadsheet: " + e.Message);
             }
             catch
             {
-                SpreadsheetGenMod.Logger.LogInfo("ERROR: Exception (catch-all) while generating and saving resource spreadsheet.");
+                Logger.LogInfo("ERROR: Exception (catch-all) while generating and saving resource spreadsheet.");
             }
         }
 
@@ -332,10 +332,10 @@ namespace StarSectorResourceSpreadsheetGenerator
         [HarmonyPrefix, HarmonyPatch(typeof(GameMain), "Begin")]
         public static void GameMain_Begin_Prefix()
         {
-            SpreadsheetGenMod.Logger.LogInfo("Begin");
+            Logger.LogInfo("Begin");
             if (GameMain.instance != null && GameObject.Find("Game Menu/button-1-bg") && !GameObject.Find("greyhak-csv-trigger-button"))
             {
-                SpreadsheetGenMod.Logger.LogInfo("Loading button");
+                Logger.LogInfo("Loading button");
                 RectTransform parent = GameObject.Find("Game Menu").GetComponent<RectTransform>();
                 RectTransform prefab = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>();
                 Vector3 referencePosition = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>().localPosition;
@@ -368,7 +368,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 // Switch from circle-thin to round-50px-border
                 Sprite sprite = Resources.Load<Sprite>("UI/Textures/Sprites/round-50px-border");
                 progressImage.sprite = GameObject.Instantiate<Sprite>(sprite);
-                SpreadsheetGenMod.Logger.LogInfo("Button load complete");
+                Logger.LogInfo("Button load complete");
             }
         }
 
