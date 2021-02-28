@@ -473,7 +473,7 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             if (planet.type == EPlanetType.Gas)
             {
-                line.Add("None,");  // Ocean
+                line.Add("None");  // Ocean
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
                     line.Add("0");
