@@ -66,6 +66,7 @@ By default the generation of the spreadsheet is performed when starting and paus
 
 ### Planet Loading Configurable
 By default this mod loads all planets.  This is the only way to get all the planet resource data.  This step can be skipped if you want to save on memory.  When disabling this flag the spreadsheet will indicate "Unloaded" for all fields that are unavailable because planet loading was skipped.
+When planet loading is enabled, you can also enable planet unloading to save on memory.
 
 ## Installation
 This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5775 on Windows 10.
@@ -74,13 +75,14 @@ To manually install this mod, add the DSPResourceSpreadsheetGenMod.dll to your %
 
 This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderstore.io/package/ebkr/r2modman_dsp/) mod manager by clicking "Install with Mod Manager" on the [DSP Modding](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) site.
 
-## Compatibility
-This mod works with Touhma's Galactic Scale mod, but using these mods together will dramatically increase memory usage.  Running this mod with 1024 systems has been seen to use 16GB of RAM.  If this is a problem for you, there is a config setting to disable the loading of planets.  Disabling planet loading won't produce as much information, but will save on memory.  With 64 star systems this mod uses about 1.7GB.
-
 ## Open Source
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### v2.0.0
+ - New planet loading algorithm to minimize memory usage.  This should greatly decrease the amount of memory needed for this mod, especially when it is used in conjunction with Touhma's Galactic Scale mod.
+ - Fixed a bug which would cause the spreadsheet not to generate if the last planet on the last star was an ocean world.
+ - New configuration setting to enable planet unloading.
 ### v1.3.0
  - Added two patches to correct for bugs in the original game, bugs which cause problems when exiting a game to the load menu while planets/factories are being loaded.  One of these bugs results in an exception being thrown.  Another results in all local planets being colored magenta.  There's a third bug in the original game which occurs in the vegetable generation, but results in an exception which doesn't appear to be causing issues, so has been left alone.
  - Cancel spreadsheet generation when a game ends.

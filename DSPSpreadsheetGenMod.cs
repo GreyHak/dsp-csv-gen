@@ -34,12 +34,18 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "1.3.0.0";
+        public const string pluginVersion = "2.0.0.0";
         public static bool enablePlanetLoadingFlag = true;
+        public static bool enablePlanetUnloadingFlag = true;
+        public static bool enableOnStartTrigger = false;
+        public static bool enableOnPauseTrigger = false;
         public static bool spreadsheetGenRequestFlag = false;
+        public static Dictionary<int, string> planetResourceData = new Dictionary<int, string>();
+        public static bool checkForPlanetsToUnload = false;
         public static string spreadsheetFileName = "default.csv";
         new internal static ManualLogSource Logger;
         new internal static BepInEx.Configuration.ConfigFile Config;
+        public static readonly int[] gases = { 1120, 1121, 1011 };
 
         public void Awake()
         {
@@ -54,29 +60,15 @@ namespace StarSectorResourceSpreadsheetGenerator
             }
             spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
 
-            enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", true, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
-            bool enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", false, "Whether or not spreadsheet generation should be triggered by starting a game.").Value;
-            bool enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", false, "Whether or not spreadsheet generation should be triggered by pausing the game.").Value;
+            enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", enablePlanetLoadingFlag, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
+            enablePlanetUnloadingFlag = Config.Bind<bool>("Enable", "UnloadPlanets", enablePlanetUnloadingFlag, "Once planets are loaded to obtain their resource data, unload them to conserve memory.  (This setting is only used if enablePlanetLoadingFlag is true.)").Value;
+            enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", enableOnStartTrigger, "Whether or not spreadsheet generation should be triggered by starting a game.").Value;
+            enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", enableOnPauseTrigger, "Whether or not spreadsheet generation should be triggered by pausing the game.").Value;
 
             Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileName + "\"");
 
             Harmony harmony = new Harmony(pluginGuid);
             harmony.PatchAll(typeof(SpreadsheetGenMod));
-
-            System.Reflection.MethodInfo originalBegin = AccessTools.Method(typeof(GameMain), "Begin");
-            System.Reflection.MethodInfo originalPause = AccessTools.Method(typeof(GameMain), "Pause");
-            System.Reflection.MethodInfo myQueueLoading = AccessTools.Method(typeof(SpreadsheetGenMod), "QueuePlanetLoading");
-
-            if (enableOnStartTrigger)
-            {
-                Logger.LogInfo("Enabling trigger to save on starting a game");
-                harmony.Patch(originalBegin, new HarmonyMethod(myQueueLoading));  // Run mine before
-            }
-            if (enableOnPauseTrigger)
-            {
-                Logger.LogInfo("Enabling trigger to save on pausing a game");
-                harmony.Patch(originalPause, new HarmonyMethod(myQueueLoading));  // Run mine before
-            }
 
             Logger.LogInfo("Initialization complete.");
         }
@@ -90,14 +82,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 return;
             }
 
-            if (!enablePlanetLoadingFlag)
-            {
-                Logger.LogInfo("Skipping planet load check.  Proceeding with resource spreadsheet generation.  Speadsheet will likely be incomplete.");
-                GenerateResourceSpreadsheet();
-                return;
-            }
-
-            Logger.LogInfo("Checking for planets to load...");
+            Logger.LogInfo("Scanning planets...");
 
             uint loadRequests = 0;
             foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
@@ -111,20 +96,28 @@ namespace StarSectorResourceSpreadsheetGenerator
                         planet.Load();
                         loadRequests++;
                     }
+                    else
+                    {
+                        planetResourceData[planet.id] = CapturePlanetResourceData(planet);
+                    }
                 }
             }
 
             if (loadRequests == 0)
             {
-                Logger.LogInfo("Planets already loaded.  Proceeding with resource spreadsheet generation.");
+                Logger.LogInfo("Planet resource data already available.  Proceeding with resource spreadsheet generation.");
+                GenerateResourceSpreadsheet();
+            }
+            else if (!enablePlanetLoadingFlag)
+            {
+                Logger.LogInfo("Skipping planet load.  Proceeding with resource spreadsheet generation.  Speadsheet will likely be incomplete.");
                 GenerateResourceSpreadsheet();
             }
             else
             {
-                var sb = new StringBuilder();
-                sb.AppendFormat("Requested {0} planets be loaded.  Waiting for planets to load.", loadRequests);
-                Logger.LogInfo(sb.ToString());
+                Logger.LogInfo("Requested " + loadRequests.ToString() + " planets be loaded.  Waiting for planets to load.");
                 spreadsheetGenRequestFlag = true;
+                checkForPlanetsToUnload = true;
             }
         }
 
@@ -132,6 +125,7 @@ namespace StarSectorResourceSpreadsheetGenerator
         public static void GameMain_End_Prefix()
         {
             spreadsheetGenRequestFlag = false;
+            planetResourceData.Clear();
 
             /******************************************************************/
             /* The code below fixes a bug in the original game which this mod */
@@ -216,36 +210,67 @@ namespace StarSectorResourceSpreadsheetGenerator
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(PlanetAlgorithm), "GenerateVeins")]
-        public static void PlanetAlgorithm_GenerateVeins_Postfix()
+        public static void PlanetAlgorithm_GenerateVeins_Postfix(PlanetAlgorithm __instance)
+        {
+            All_PlanetAlgorithm_GenerateVeins_Postfix(__instance);
+        }
+
+        // PlanetAlgorithm7 appears to be for Ocean worlds.
+        [HarmonyPostfix, HarmonyPatch(typeof(PlanetAlgorithm7), "GenerateVeins")]
+        public static void PlanetAlgorithm7_GenerateVeins_Postfix(PlanetAlgorithm __instance)
+        {
+            All_PlanetAlgorithm_GenerateVeins_Postfix(__instance);
+        }
+
+        public static void All_PlanetAlgorithm_GenerateVeins_Postfix(PlanetAlgorithm planetAlgorithm)
         {
             //Logger.LogInfo("Veins generated.");
+
+            // Resource data is captured whether spreadsheetGenRequestFlag is true or not.
+            // This way, if enablePlanetLoadingFlag and enablePlanetUnloadingFlag are both true,
+            // and the generation is triggered a second time, reloading won't be needed.
+            // This will also improve spreatsheet generation when planet loading is not enabled.
+            if (spreadsheetGenRequestFlag || (enablePlanetLoadingFlag && enablePlanetUnloadingFlag) || !enablePlanetLoadingFlag)
+            {
+                PlanetData planet = planetAlgorithm.planet;
+                planetResourceData[planet.id] = CapturePlanetResourceData(planet);
+            }
 
             if (spreadsheetGenRequestFlag)
             {
                 Logger.LogInfo("Checking if there are still unloaded planets...");
 
                 int planetCount = 0;
-                uint unloadedPlanetCount = 0;
+                int loadedPlanetCount = 0;
                 foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
                 {
                     planetCount += star.planets.Length;
                     foreach (PlanetData planet in star.planets)
                     {
-                        if ((planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0))
+                        if (planetResourceData.ContainsKey(planet.id))
                         {
-                            unloadedPlanetCount++;
+                            loadedPlanetCount++;
                         }
+                        /*else if ((planet.type == EPlanetType.Gas) || (planet.veinGroups.Length != 0))
+                        {
+                            Logger.LogInfo("Caught an extra planet. A " + planet.type.ToString() + " planet named " + planet.displayName + " with " + planet.veinGroups.Length.ToString() + " vein groups.");
+                            planetResourceData[planet.id] = CapturePlanetResourceData(planet);
+                            loadedPlanetCount++;
+                        }*/
                     }
                 }
+                //Logger.LogInfo("Of " + planetCount.ToString() + " total planets, resource data has been collected for " + loadedPlanetCount.ToString() + " planets.");
 
-                progressImage.fillAmount = ((float)planetCount - unloadedPlanetCount) / planetCount;
-
-                if (unloadedPlanetCount == 0)
+                if (loadedPlanetCount == planetCount)
                 {
                     spreadsheetGenRequestFlag = false;
                     Logger.LogInfo("Planet loading completed.  Proceeding with resource spreadsheet generation.");
                     GenerateResourceSpreadsheet();
                     progressImage.fillAmount = 0;
+                }
+                else
+                {
+                    progressImage.fillAmount = (float)loadedPlanetCount / planetCount;
                 }
             }
         }
@@ -264,7 +289,6 @@ namespace StarSectorResourceSpreadsheetGenerator
                 {
                     sb.AppendFormat("{0},", item.name);
                 }
-                int[] gases = { 1120, 1121, 1011 };
                 foreach (int item in gases)
                 {
                     sb.AppendFormat("{0},", LDB.items.Select(item).name);
@@ -275,90 +299,14 @@ namespace StarSectorResourceSpreadsheetGenerator
                 {
                     foreach (PlanetData planet in star.planets)
                     {
-                        sb.AppendFormat("{0},", planet.displayName);
-                        sb.AppendFormat("{0},", star.displayName);
-                        //sb.AppendFormat("{0},", star.luminosity);  // Removed to avoid confusion
-                        sb.AppendFormat("{0},", star.dysonLumino);
-                        sb.AppendFormat("{0},", star.typeString);
-                        sb.AppendFormat("{0},", star.mass);
-                        sb.AppendFormat("{0},", star.position.x);
-                        sb.AppendFormat("{0},", star.position.y);
-                        sb.AppendFormat("{0},", star.position.z);
-
-                        sb.AppendFormat("{0},", planet.windStrength);
-                        sb.AppendFormat("{0},", planet.luminosity);
-                        sb.AppendFormat("{0},", planet.typeString);
-                        sb.AppendFormat("{0},", planet.landPercent);
-                        sb.AppendFormat("\"{0}\",", planet.singularity);
-                        sb.AppendFormat("{0},", planet.orbitAround);  // Mostly 0, but also 1-4
-                        sb.AppendFormat("{0},", planet.orbitInclination);
-
-                        if (planet.type == EPlanetType.Gas)
+                        if (planetResourceData.ContainsKey(planet.id))
                         {
-                            sb.Append("None,");  // Ocean
-                            foreach (VeinProto item in LDB.veins.dataArray)
-                            {
-                                sb.Append("0,");
-                            }
-                            foreach (int item in gases)
-                            {
-                                int index = Array.IndexOf(planet.gasItems, item);
-                                if (index == -1)
-                                {
-                                    sb.Append("0,");
-                                }
-                                else
-                                {
-                                    sb.AppendFormat("{0},", planet.gasSpeeds[index]);
-                                }
-                            }
-                            sb.Append("\n");
+                            sb.Append(planetResourceData[planet.id]);
                         }
                         else
                         {
-                            if (planet.waterItemId == 0)
-                            {
-                                sb.Append("None,");
-                            }
-                            else if (planet.waterItemId == -1)
-                            {
-                                sb.Append("Lava,");
-                            }
-                            else
-                            {
-                                ItemProto waterItem = LDB.items.Select(planet.waterItemId);
-                                sb.AppendFormat("{0},", waterItem.name);
-                            }
-
-                            if (planet.veinGroups.Length == 0)
-                            {
-                                foreach (VeinProto item in LDB.veins.dataArray)
-                                {
-                                    sb.Append("Unloaded,");
-                                }
-                            }
-                            else
-                            {
-                                EVeinType type = (EVeinType)1;
-                                foreach (VeinProto item in LDB.veins.dataArray)
-                                {
-                                    long amount = planet.veinAmounts[(int)type];
-                                    if (type == EVeinType.Oil)
-                                    {
-                                        sb.AppendFormat("{0},", (double)amount * VeinData.oilSpeedMultiplier);
-                                    }
-                                    else
-                                    {
-                                        sb.AppendFormat("{0},", amount);
-                                    }
-                                    type++;
-                                }
-                            }
-                            foreach (int item in gases)
-                            {
-                                sb.Append("0,");
-                            }
-                            sb.Append("\n");
+                            Logger.LogError("ERROR: Missing resource data for " + planet.displayName);
+                            sb.AppendFormat("{0}\n", planet.displayName);
                         }
                     }
                 }
@@ -410,6 +358,100 @@ namespace StarSectorResourceSpreadsheetGenerator
             }
         }
 
+        public static String CapturePlanetResourceData(PlanetData planet)
+        {
+            StarData star = planet.star;
+
+            var sb = new StringBuilder();
+            sb.AppendFormat("{0},", planet.displayName);
+            sb.AppendFormat("{0},", star.displayName);
+            //sb.AppendFormat("{0},", star.luminosity);  // Removed to avoid confusion
+            sb.AppendFormat("{0},", star.dysonLumino);
+            sb.AppendFormat("{0},", star.typeString);
+            sb.AppendFormat("{0},", star.mass);
+            sb.AppendFormat("{0},", star.position.x);
+            sb.AppendFormat("{0},", star.position.y);
+            sb.AppendFormat("{0},", star.position.z);
+
+            sb.AppendFormat("{0},", planet.windStrength);
+            sb.AppendFormat("{0},", planet.luminosity);
+            sb.AppendFormat("{0},", planet.typeString);
+            sb.AppendFormat("{0},", planet.landPercent);
+            sb.AppendFormat("\"{0}\",", planet.singularity);
+            sb.AppendFormat("{0},", planet.orbitAround);  // Mostly 0, but also 1-4
+            sb.AppendFormat("{0},", planet.orbitInclination);
+
+            if (planet.type == EPlanetType.Gas)
+            {
+                sb.Append("None,");  // Ocean
+                foreach (VeinProto item in LDB.veins.dataArray)
+                {
+                    sb.Append("0,");
+                }
+                foreach (int item in gases)
+                {
+                    int index = Array.IndexOf(planet.gasItems, item);
+                    if (index == -1)
+                    {
+                        sb.Append("0,");
+                    }
+                    else
+                    {
+                        sb.AppendFormat("{0},", planet.gasSpeeds[index]);
+                    }
+                }
+                sb.Append("\n");
+            }
+            else
+            {
+                if (planet.waterItemId == 0)
+                {
+                    sb.Append("None,");
+                }
+                else if (planet.waterItemId == -1)
+                {
+                    sb.Append("Lava,");
+                }
+                else
+                {
+                    ItemProto waterItem = LDB.items.Select(planet.waterItemId);
+                    sb.AppendFormat("{0},", waterItem.name);
+                }
+
+                if (planet.veinGroups.Length == 0)
+                {
+                    foreach (VeinProto item in LDB.veins.dataArray)
+                    {
+                        sb.Append("Unloaded,");
+                    }
+                }
+                else
+                {
+                    EVeinType type = (EVeinType)1;
+                    foreach (VeinProto item in LDB.veins.dataArray)
+                    {
+                        long amount = planet.veinAmounts[(int)type];
+                        if (type == EVeinType.Oil)
+                        {
+                            sb.AppendFormat("{0},", (double)amount * VeinData.oilSpeedMultiplier);
+                        }
+                        else
+                        {
+                            sb.AppendFormat("{0},", amount);
+                        }
+                        type++;
+                    }
+                }
+                foreach (int item in gases)
+                {
+                    sb.Append("0,");
+                }
+                sb.Append("\n");
+            }
+
+            return sb.ToString();
+        }
+
         public static RectTransform triggerButton;
         public static Sprite triggerSprite;
         public static Image progressImage;
@@ -417,6 +459,9 @@ namespace StarSectorResourceSpreadsheetGenerator
         [HarmonyPrefix, HarmonyPatch(typeof(GameMain), "Begin")]
         public static void GameMain_Begin_Prefix()
         {
+            spreadsheetGenRequestFlag = false;
+            planetResourceData.Clear();
+
             Logger.LogInfo("Game beginning");
             if (GameMain.instance != null && GameObject.Find("Game Menu/button-1-bg"))
             {
@@ -461,6 +506,20 @@ namespace StarSectorResourceSpreadsheetGenerator
                     progressImage.sprite = GameObject.Instantiate<Sprite>(sprite);
                     Logger.LogInfo("Button load complete");
                 }
+            }
+
+            if (enableOnStartTrigger)
+            {
+                QueuePlanetLoading();
+            }
+        }
+
+        [HarmonyPrefix, HarmonyPatch(typeof(GameMain), "Pause")]
+        public static void GameMain_Pause_Prefix()
+        {
+            if (enableOnPauseTrigger)
+            {
+                QueuePlanetLoading();
             }
         }
 
@@ -517,6 +576,45 @@ namespace StarSectorResourceSpreadsheetGenerator
                 return false;
             }
             return true;
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(GameData), "GameTick")]
+        public static void GameData_GameTick_Postfix()
+        {
+            if (checkForPlanetsToUnload && enablePlanetLoadingFlag && enablePlanetUnloadingFlag && GameMain.localStar != null && GameMain.mainPlayer != null)
+            {
+                foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
+                {
+                    foreach (PlanetData planet in star.planets)
+                    {
+                        if (PlanetModelingManager.currentModelingPlanet != null && planet.id == PlanetModelingManager.currentModelingPlanet.id)
+                        {
+                            Logger.LogInfo("Skipping planet " + planet.displayName + " being modelled");
+                        }
+                        else if (PlanetModelingManager.currentFactingPlanet != null && planet.id == PlanetModelingManager.currentFactingPlanet.id)
+                        {
+                            Logger.LogInfo("Skipping planet " + planet.displayName + " whos factory is being modelled");
+                        }
+                        else if (star.id != GameMain.localStar.id)
+                        {
+                            Logger.LogInfo("Unloading planet " + planet.displayName);
+                            planet.Unload();
+                        }
+                        else if (planet.id != GameMain.mainPlayer.planetId)
+                        {
+                            Logger.LogInfo("Unloading planet factory " + planet.displayName);
+                            planet.UnloadFactory();
+                        }
+                    }
+                }
+
+                if (PlanetModelingManager.genPlanetReqList.Count == 0 &&
+                    PlanetModelingManager.fctPlanetReqList.Count == 0 &&
+                    PlanetModelingManager.modPlanetReqList.Count == 0)
+                {
+                    checkForPlanetsToUnload = false;
+                }
+            }
         }
     }
 }
