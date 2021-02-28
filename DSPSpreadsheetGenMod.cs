@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 using BepInEx;
 using HarmonyLib;
 using UnityEngine;
@@ -21,7 +22,6 @@ using BepInEx.Logging;
 using System.Security;
 using System.Threading;
 using System.Security.Permissions;
-using System.Text.RegularExpressions;
 
 [module: UnverifiableCode]
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -44,6 +44,9 @@ namespace StarSectorResourceSpreadsheetGenerator
         public static Dictionary<int, string> planetResourceData = new Dictionary<int, string>();
         public static bool checkForPlanetsToUnload = false;
         public static string spreadsheetFileNameTemplate = "default.csv";
+        public static string spreadsheetColumnSeparator = ",";
+        public static CultureInfo spreadsheetLocale = CultureInfo.CurrentUICulture;
+        public static int spreadsheetFloatPrecision = -1;
         new internal static ManualLogSource Logger;
         new internal static BepInEx.Configuration.ConfigFile Config;
         public static readonly int[] gases = { 1120, 1121, 1011 };
@@ -59,7 +62,10 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 spreadsheetFileNameTemplate = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + spreadsheetFileNameTemplate;
             }
-            spreadsheetFileNameTemplate = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileNameTemplate, "Path to the output spreadsheet.  You can use ${seed} and ${starCount} as placeholders and the mod will inseart them into the filename.").Value;
+            spreadsheetFileNameTemplate = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileNameTemplate, "Path to the output spreadsheet.  You can use ${seed} and ${starCount} as placeholders and the mod will insert them into the filename.").Value;
+            spreadsheetColumnSeparator = Config.Bind<string>("Output", "SpreadsheetColumnSeparator", spreadsheetColumnSeparator, "Character to use as Separator in the generated file.").Value;
+            spreadsheetFloatPrecision = Config.Bind<int>("Output", "SpreadsheetFloatPrecision", spreadsheetFloatPrecision, "Decimals to use when exporting floating point numbers. Use -1 to disable rounding.").Value;
+            spreadsheetLocale = new CultureInfo(Config.Bind<string>("Output", "SpreadsheetLocale", spreadsheetLocale.Name, "Locale to use for exporting numbers.").Value, false);
 
             enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", enablePlanetLoadingFlag, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
             enablePlanetUnloadingFlag = Config.Bind<bool>("Enable", "UnloadPlanets", enablePlanetUnloadingFlag, "Once planets are loaded to obtain their resource data, unload them to conserve memory.  (This setting is only used if LoadAllPlanets is true.)").Value;
@@ -335,17 +341,39 @@ namespace StarSectorResourceSpreadsheetGenerator
                 Logger.LogInfo("Begin resource spreadsheet generation...");
 
                 var sb = new StringBuilder();
-                sb.Append("Planet Name,Star Name,Star Dyson Luminosity,Star Type,Star Mass,Star Position X,Star Position Y,Star Position Z,Wind Strength,Luminosity on Planet,Planet Type,Land Percent,Singularity,Planet/Moon,Orbit Inclination,Ocean,");
-                //sb.Append("Ocean,Iron Ore,Copper Ore,Silicon Ore,Titanium Ore,Stone Ore,Coal Ore,Crude Oil,Fire Ice,Kimberlite Ore,Fractal Silicon,Spiniform Stalagmite Crystal,Optical Grating Crystal,Bamboo,Unipolar Magnet,");
+                List<String> columns = new List<String>
+                {
+                    "Planet Name",
+                    "Star Name",
+                    "Star Dyson Luminosity",
+                    "Star Type",
+                    "Star Mass",
+                    "Star Position X",
+                    "Star Position Y",
+                    "Star Position Z",
+                    "Wind Strength",
+                    "Luminosity on Planet",
+                    "Planet Type",
+                    "Land Percent",
+                    "Singularity",
+                    "Planet/Moon",
+                    "Orbit Inclination",
+                    "Ocean"
+                };
+
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
-                    sb.AppendFormat("{0},", item.name);
+                    columns.Add(item.name);
                 }
                 foreach (int item in gases)
                 {
-                    sb.AppendFormat("{0},", LDB.items.Select(item).name);
+                    columns.Add(LDB.items.Select(item).name);
                 }
-                sb.Append("\n");
+                foreach (string entry in columns)
+                {
+                    sb.Append(entry).Append(spreadsheetColumnSeparator);
+                }
+                sb.Append(Environment.NewLine);
 
                 foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
                 {
@@ -417,68 +445,78 @@ namespace StarSectorResourceSpreadsheetGenerator
         public static String CapturePlanetResourceData(PlanetData planet)
         {
             StarData star = planet.star;
+            string floatFormat = "";
+            if (spreadsheetFloatPrecision >= 0)
+            {
+                floatFormat = "F" + spreadsheetFloatPrecision.ToString();
+            }
 
             var sb = new StringBuilder();
-            sb.AppendFormat("{0},", planet.displayName);
-            sb.AppendFormat("{0},", star.displayName);
-            //sb.AppendFormat("{0},", star.luminosity);  // Removed to avoid confusion
-            sb.AppendFormat("{0},", star.dysonLumino);
-            sb.AppendFormat("{0},", star.typeString);
-            sb.AppendFormat("{0},", star.mass);
-            sb.AppendFormat("{0},", star.position.x);
-            sb.AppendFormat("{0},", star.position.y);
-            sb.AppendFormat("{0},", star.position.z);
-
-            sb.AppendFormat("{0},", planet.windStrength);
-            sb.AppendFormat("{0},", planet.luminosity);
-            sb.AppendFormat("{0},", planet.typeString);
-            sb.AppendFormat("{0},", planet.landPercent);
-            sb.AppendFormat("\"{0}\",", planet.singularity);
-            sb.AppendFormat("{0},", planet.orbitAround);  // Mostly 0, but also 1-4
-            sb.AppendFormat("{0},", planet.orbitInclination);
+            List<String> line = new List<String>
+            {
+                planet.displayName,
+                star.displayName,
+                star.dysonLumino.ToString(floatFormat, spreadsheetLocale),
+                star.typeString,
+                star.mass.ToString(floatFormat, spreadsheetLocale),
+                star.position.x.ToString(floatFormat, spreadsheetLocale),
+                star.position.y.ToString(floatFormat, spreadsheetLocale),
+                star.position.z.ToString(floatFormat, spreadsheetLocale),
+                planet.windStrength.ToString(floatFormat, spreadsheetLocale),
+                planet.luminosity.ToString(floatFormat, spreadsheetLocale),
+                planet.typeString,
+                planet.landPercent.ToString(floatFormat, spreadsheetLocale),
+                planet.singularity.ToString(),
+                planet.orbitAround.ToString(),
+                planet.orbitInclination.ToString(floatFormat, spreadsheetLocale)
+            };
 
             if (planet.type == EPlanetType.Gas)
             {
-                sb.Append("None,");  // Ocean
+                line.Add("None");  // Ocean
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
-                    sb.Append("0,");
+                    line.Add("0");
                 }
                 foreach (int item in gases)
                 {
                     int index = Array.IndexOf(planet.gasItems, item);
                     if (index == -1)
                     {
-                        sb.Append("0,");
+                        line.Add("0");
                     }
                     else
                     {
-                        sb.AppendFormat("{0},", planet.gasSpeeds[index]);
+                        line.Add(planet.gasSpeeds[index].ToString(floatFormat, spreadsheetLocale));
                     }
                 }
-                sb.Append("\n");
+                foreach(string entry in line)
+                {
+                    sb.Append(entry).Append(spreadsheetColumnSeparator);
+                }
+                sb.Append(Environment.NewLine);
             }
             else
             {
                 if (planet.waterItemId == 0)
                 {
-                    sb.Append("None,");
+                    line.Add("None");
                 }
                 else if (planet.waterItemId == -1)
                 {
-                    sb.Append("Lava,");
+                    line.Add("Lava");
                 }
                 else
                 {
                     ItemProto waterItem = LDB.items.Select(planet.waterItemId);
-                    sb.AppendFormat("{0},", waterItem.name);
+                    line.Add(waterItem.name);
                 }
 
                 if (planet.veinGroups.Length == 0)
                 {
                     foreach (VeinProto item in LDB.veins.dataArray)
                     {
-                        sb.Append("Unloaded,");
+                        line.Add("Unloaded");
                     }
                 }
                 else
@@ -489,20 +527,24 @@ namespace StarSectorResourceSpreadsheetGenerator
                         long amount = planet.veinAmounts[(int)type];
                         if (type == EVeinType.Oil)
                         {
-                            sb.AppendFormat("{0},", (double)amount * VeinData.oilSpeedMultiplier);
+                            line.Add(((double)amount * VeinData.oilSpeedMultiplier).ToString(floatFormat, spreadsheetLocale));
                         }
                         else
                         {
-                            sb.AppendFormat("{0},", amount);
+                            line.Add(amount.ToString(spreadsheetLocale));
                         }
                         type++;
                     }
                 }
                 foreach (int item in gases)
                 {
-                    sb.Append("0,");
+                    line.Add("0");
                 }
-                sb.Append("\n");
+                foreach (string entry in line)
+                {
+                    sb.Append(entry).Append(spreadsheetColumnSeparator);
+                }
+                sb.Append(Environment.NewLine);
             }
 
             return sb.ToString();
