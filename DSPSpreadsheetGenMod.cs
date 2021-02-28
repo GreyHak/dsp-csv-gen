@@ -589,21 +589,27 @@ namespace StarSectorResourceSpreadsheetGenerator
                     {
                         if (PlanetModelingManager.currentModelingPlanet != null && planet.id == PlanetModelingManager.currentModelingPlanet.id)
                         {
-                            Logger.LogInfo("Skipping planet " + planet.displayName + " being modelled");
+                            //Logger.LogInfo("Skipping planet " + planet.displayName + " being modelled");
                         }
                         else if (PlanetModelingManager.currentFactingPlanet != null && planet.id == PlanetModelingManager.currentFactingPlanet.id)
                         {
-                            Logger.LogInfo("Skipping planet " + planet.displayName + " whos factory is being modelled");
+                            //Logger.LogInfo("Skipping planet " + planet.displayName + " whos factory is being modelled");
                         }
                         else if (star.id != GameMain.localStar.id)
                         {
-                            Logger.LogInfo("Unloading planet " + planet.displayName);
-                            planet.Unload();
+                            if (planet.loaded)
+                            {
+                                Logger.LogInfo("Unloading planet " + planet.displayName);
+                                planet.Unload();
+                            }
                         }
                         else if (planet.id != GameMain.mainPlayer.planetId)
                         {
-                            Logger.LogInfo("Unloading planet factory " + planet.displayName);
-                            planet.UnloadFactory();
+                            if (planet.factoryLoaded)
+                            {
+                                Logger.LogInfo("Unloading planet factory " + planet.displayName);
+                                planet.UnloadFactory();
+                            }
                         }
                     }
                 }
