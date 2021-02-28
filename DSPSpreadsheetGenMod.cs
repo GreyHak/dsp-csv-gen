@@ -35,7 +35,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "2.0.0.0";
+        public const string pluginVersion = "2.0.1.0";
         public static bool enablePlanetLoadingFlag = true;
         public static bool enablePlanetUnloadingFlag = true;
         public static bool enableOnStartTrigger = false;
@@ -43,7 +43,7 @@ namespace StarSectorResourceSpreadsheetGenerator
         public static bool spreadsheetGenRequestFlag = false;
         public static Dictionary<int, string> planetResourceData = new Dictionary<int, string>();
         public static bool checkForPlanetsToUnload = false;
-        public static string spreadsheetFileName = "default.csv";
+        public static string spreadsheetFileNameTemplate = "default.csv";
         new internal static ManualLogSource Logger;
         new internal static BepInEx.Configuration.ConfigFile Config;
         public static readonly int[] gases = { 1120, 1121, 1011 };
@@ -54,19 +54,19 @@ namespace StarSectorResourceSpreadsheetGenerator
             SpreadsheetGenMod.Config = base.Config;
 
             // Determine the default spreadsheet path and configured spreadsheet path.
-            spreadsheetFileName = "DSP_Star_Sector_Resources-#(seed)@(size).csv";
+            spreadsheetFileNameTemplate = "DSP_Star_Sector_Resources_${seed}-${starCount}.csv";
             if (Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) != "")
             {
-                spreadsheetFileName = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + spreadsheetFileName;
+                spreadsheetFileNameTemplate = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + spreadsheetFileNameTemplate;
             }
-            spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet. You can use (seed) and (size) as placeholders in the filename").Value;
+            spreadsheetFileNameTemplate = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileNameTemplate, "Path to the output spreadsheet.  You can use ${seed} and ${starCount} as placeholders and the mod will inseart them into the filename.").Value;
 
             enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", enablePlanetLoadingFlag, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
             enablePlanetUnloadingFlag = Config.Bind<bool>("Enable", "UnloadPlanets", enablePlanetUnloadingFlag, "Once planets are loaded to obtain their resource data, unload them to conserve memory.  (This setting is only used if LoadAllPlanets is true.)").Value;
             enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", enableOnStartTrigger, "Whether or not spreadsheet generation should be triggered by starting a game.").Value;
             enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", enableOnPauseTrigger, "Whether or not spreadsheet generation should be triggered by pausing the game.").Value;
 
-            Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileName + "\"");
+            Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileNameTemplate + "\"");
 
             Harmony harmony = new Harmony(pluginGuid);
             harmony.PatchAll(typeof(SpreadsheetGenMod));
@@ -263,13 +263,6 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 Logger.LogInfo("Checking if there are still unloaded planets...");
 
-                int modelingTotal = PlanetModelingManager.genPlanetReqList.Count + PlanetModelingManager.fctPlanetReqList.Count + PlanetModelingManager.modPlanetReqList.Count;
-                if (modelingTotal > 10)
-                {
-                    Logger.LogInfo("Waiting while " + modelingTotal.ToString() + " planets are modeled");
-                    return;
-                }
-
                 int planetCount = 0;
                 uint loadedPlanetCount = 0;
                 StarData closestStarWithUnloadedPlanets = null;
@@ -302,6 +295,13 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
 
                 progressImage.fillAmount = (float)loadedPlanetCount / planetCount;
+
+                int modelingTotal = PlanetModelingManager.genPlanetReqList.Count + PlanetModelingManager.fctPlanetReqList.Count + PlanetModelingManager.modPlanetReqList.Count;
+                if (modelingTotal > 10)
+                {
+                    Logger.LogInfo("Waiting while " + modelingTotal.ToString() + " planets are modeled");
+                    return;
+                }
 
                 if (closestStarWithUnloadedPlanets != null)
                 {
@@ -363,8 +363,9 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                 }
                 // insert values for possible placeholders in filename
-                spreadsheetFileName = Regex.Replace(spreadsheetFileName, @"\(seed\)", GameMain.galaxy.seed.ToString("D8"));
-                spreadsheetFileName = Regex.Replace(spreadsheetFileName, @"\(size\)", GameMain.galaxy.starCount.ToString());
+                String spreadsheetFileName = spreadsheetFileNameTemplate;
+                spreadsheetFileName = spreadsheetFileName.Replace("${seed}", GameMain.galaxy.seed.ToString("D8"));
+                spreadsheetFileName = spreadsheetFileName.Replace("${starCount}", GameMain.galaxy.starCount.ToString());
 
                 // Make sure the folder we're trying to write in exists.
                 // {username}/Documents doesn't always exist on Wine platform.

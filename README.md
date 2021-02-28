@@ -79,6 +79,9 @@ This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderst
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### v2.0.1
+ - ${seed} and ${starCount} can now be optionally included in the output filename generation.  (Contributed by [ctcDNightmare](https://github.com/ctcDNightmare).)
+ - Small improvement in progress bar accuracy.
 ### v2.0.0
  - New planet loading algorithm to minimize memory usage.  This should greatly decrease the amount of memory needed for this mod, especially when it is used in conjunction with Touhma's Galactic Scale mod.
  - Fixed a bug which would cause planets to not show up for a while while the planets being loaded for the spreadsheet were generating.  Sorry, but fixing this problem is going to slow down the process.  I think you'll agree the slower speed is worth the game stability.
@@ -103,7 +106,7 @@ The source code for this mod is available for download, review and forking on Gi
 ### v1.1.2
  - README-only update.  thunderstore needs to update their markdown interpreter for list subitems.
 ### v1.1.1
- - Incorporated change from operinko to create the output directory if needed.
+ - Incorporated change from [operinko](https://github.com/operinko) to create the output directory if needed.
  - Enhancement to README, most notably to include a note about memory usage when this mod is used with Touhma's Galactic Scale mod.
 ### v1.1.0
  - Added a config file for specifying the path of the output spreadsheet.
