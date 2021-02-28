@@ -21,6 +21,7 @@ using BepInEx.Logging;
 using System.Security;
 using System.Threading;
 using System.Security.Permissions;
+using System.Text.RegularExpressions;
 
 [module: UnverifiableCode]
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -53,12 +54,12 @@ namespace StarSectorResourceSpreadsheetGenerator
             SpreadsheetGenMod.Config = base.Config;
 
             // Determine the default spreadsheet path and configured spreadsheet path.
-            spreadsheetFileName = "DSP_Star_Sector_Resources.csv";
+            spreadsheetFileName = "DSP_Star_Sector_Resources-#(seed)@(size).csv";
             if (Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) != "")
             {
                 spreadsheetFileName = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + spreadsheetFileName;
             }
-            spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
+            spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet. You can use (seed) and (size) as placeholders in the filename").Value;
 
             enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", enablePlanetLoadingFlag, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
             enablePlanetUnloadingFlag = Config.Bind<bool>("Enable", "UnloadPlanets", enablePlanetUnloadingFlag, "Once planets are loaded to obtain their resource data, unload them to conserve memory.  (This setting is only used if LoadAllPlanets is true.)").Value;
@@ -361,6 +362,9 @@ namespace StarSectorResourceSpreadsheetGenerator
                         }
                     }
                 }
+                // insert values for possible placeholders in filename
+                spreadsheetFileName = Regex.Replace(spreadsheetFileName, @"\(seed\)", GameMain.galaxy.seed.ToString("D8"));
+                spreadsheetFileName = Regex.Replace(spreadsheetFileName, @"\(size\)", GameMain.galaxy.starCount.ToString());
 
                 // Make sure the folder we're trying to write in exists.
                 // {username}/Documents doesn't always exist on Wine platform.
