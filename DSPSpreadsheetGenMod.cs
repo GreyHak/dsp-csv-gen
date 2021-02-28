@@ -61,7 +61,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             spreadsheetFileName = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileName, "Path to the output spreadsheet.").Value;
 
             enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", enablePlanetLoadingFlag, "Planet loading is needed to get all resource data, but you can skip this step for memory efficiency.").Value;
-            enablePlanetUnloadingFlag = Config.Bind<bool>("Enable", "UnloadPlanets", enablePlanetUnloadingFlag, "Once planets are loaded to obtain their resource data, unload them to conserve memory.  (This setting is only used if enablePlanetLoadingFlag is true.)").Value;
+            enablePlanetUnloadingFlag = Config.Bind<bool>("Enable", "UnloadPlanets", enablePlanetUnloadingFlag, "Once planets are loaded to obtain their resource data, unload them to conserve memory.  (This setting is only used if LoadAllPlanets is true.)").Value;
             enableOnStartTrigger = Config.Bind<bool>("Enable", "SaveOnStart", enableOnStartTrigger, "Whether or not spreadsheet generation should be triggered by starting a game.").Value;
             enableOnPauseTrigger = Config.Bind<bool>("Enable", "SaveOnPause", enableOnPauseTrigger, "Whether or not spreadsheet generation should be triggered by pausing the game.").Value;
 
@@ -84,22 +84,39 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             Logger.LogInfo("Scanning planets...");
 
+            int planetCount = 0;
+            uint loadedPlanetCount = 0;
             uint loadRequests = 0;
+            StarData closestStarWithUnloadedPlanets = null;
+            float distanceToClosestStarWithUnloadedPlanets = float.MaxValue;
             foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
             {
+                bool hasUnloadedPlanetsFlag = false;
+                planetCount += star.planets.Length;
                 foreach (PlanetData planet in star.planets)
                 {
                     if ((planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0))
                     {
-                        // PlanetModelingManager.PlanetComputeThreadMain (static, but private) -> PlanetAlgorithm.GenerateVeins
-                        // Unable to call GenerateVeins directly because it depends on PlanetRawData which isn't available.
-                        planet.Load();
-                        loadRequests++;
+                        if (!planetResourceData.ContainsKey(planet.id))
+                        {
+                            hasUnloadedPlanetsFlag = true;
+                            loadRequests++;
+                        }
                     }
                     else
                     {
                         planetResourceData[planet.id] = CapturePlanetResourceData(planet);
+                        loadedPlanetCount++;
                     }
+                }
+                if (hasUnloadedPlanetsFlag)
+                {
+                    float distanceToStar = Vector3.Distance(GameMain.mainPlayer.position, star.position);
+                    if (distanceToStar < distanceToClosestStarWithUnloadedPlanets)
+                    {
+                        distanceToClosestStarWithUnloadedPlanets = distanceToStar;
+                        closestStarWithUnloadedPlanets = star;
+                    }                    
                 }
             }
 
@@ -115,9 +132,18 @@ namespace StarSectorResourceSpreadsheetGenerator
             }
             else
             {
-                Logger.LogInfo("Requested " + loadRequests.ToString() + " planets be loaded.  Waiting for planets to load.");
+                Logger.LogInfo(loadRequests.ToString() + " planets to be loaded.  Waiting for planets to load.");
                 spreadsheetGenRequestFlag = true;
                 checkForPlanetsToUnload = true;
+                progressImage.fillAmount = (float)loadedPlanetCount / planetCount;
+
+                Logger.LogInfo("Requesting " + closestStarWithUnloadedPlanets.planets.Length + " planets be loaded around " + closestStarWithUnloadedPlanets.displayName);
+                foreach (PlanetData planet in closestStarWithUnloadedPlanets.planets)
+                {
+                    // PlanetModelingManager.PlanetComputeThreadMain (static, but private) -> PlanetAlgorithm.GenerateVeins
+                    // Unable to call GenerateVeins directly because it depends on PlanetRawData which isn't available.
+                    planet.Load();
+                }
             }
         }
 
@@ -207,24 +233,6 @@ namespace StarSectorResourceSpreadsheetGenerator
         public static void PlanetData_NotifyLoaded_Prefix()
         {
             Logger.LogInfo("Planet loaded.");
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(PlanetAlgorithm), "GenerateVeins")]
-        public static void PlanetAlgorithm_GenerateVeins_Postfix(PlanetAlgorithm __instance)
-        {
-            All_PlanetAlgorithm_GenerateVeins_Postfix(__instance);
-        }
-
-        // PlanetAlgorithm7 appears to be for Ocean worlds.
-        [HarmonyPostfix, HarmonyPatch(typeof(PlanetAlgorithm7), "GenerateVeins")]
-        public static void PlanetAlgorithm7_GenerateVeins_Postfix(PlanetAlgorithm __instance)
-        {
-            All_PlanetAlgorithm_GenerateVeins_Postfix(__instance);
-        }
-
-        public static void All_PlanetAlgorithm_GenerateVeins_Postfix(PlanetAlgorithm planetAlgorithm)
-        {
-            //Logger.LogInfo("Veins generated.");
 
             // Resource data is captured whether spreadsheetGenRequestFlag is true or not.
             // This way, if enablePlanetLoadingFlag and enablePlanetUnloadingFlag are both true,
@@ -232,18 +240,36 @@ namespace StarSectorResourceSpreadsheetGenerator
             // This will also improve spreatsheet generation when planet loading is not enabled.
             if (spreadsheetGenRequestFlag || (enablePlanetLoadingFlag && enablePlanetUnloadingFlag) || !enablePlanetLoadingFlag)
             {
-                PlanetData planet = planetAlgorithm.planet;
-                planetResourceData[planet.id] = CapturePlanetResourceData(planet);
+                foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
+                {
+                    foreach (PlanetData planet in star.planets)
+                    {
+                        if (!planetResourceData.ContainsKey(planet.id) && (planet.loaded || (planet.veinGroups.Length != 0)))
+                        {
+                            planetResourceData[planet.id] = CapturePlanetResourceData(planet);
+                        }
+                    }
+                }
             }
 
             if (spreadsheetGenRequestFlag)
             {
                 Logger.LogInfo("Checking if there are still unloaded planets...");
 
+                int modelingTotal = PlanetModelingManager.genPlanetReqList.Count + PlanetModelingManager.fctPlanetReqList.Count + PlanetModelingManager.modPlanetReqList.Count;
+                if (modelingTotal > 10)
+                {
+                    Logger.LogInfo("Waiting while " + modelingTotal.ToString() + " planets are modeled");
+                    return;
+                }
+
                 int planetCount = 0;
-                int loadedPlanetCount = 0;
+                uint loadedPlanetCount = 0;
+                StarData closestStarWithUnloadedPlanets = null;
+                float distanceToClosestStarWithUnloadedPlanets = float.MaxValue;
                 foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
                 {
+                    bool hasUnloadedUnqueuedPlanetsFlag = false;
                     planetCount += star.planets.Length;
                     foreach (PlanetData planet in star.planets)
                     {
@@ -251,15 +277,34 @@ namespace StarSectorResourceSpreadsheetGenerator
                         {
                             loadedPlanetCount++;
                         }
-                        /*else if ((planet.type == EPlanetType.Gas) || (planet.veinGroups.Length != 0))
+                        else if ((planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0) && !planet.loading)
                         {
-                            Logger.LogInfo("Caught an extra planet. A " + planet.type.ToString() + " planet named " + planet.displayName + " with " + planet.veinGroups.Length.ToString() + " vein groups.");
-                            planetResourceData[planet.id] = CapturePlanetResourceData(planet);
-                            loadedPlanetCount++;
-                        }*/
+                            hasUnloadedUnqueuedPlanetsFlag = true;
+                        }
+                        // else should be in the process of being loaded
+                    }
+                    if (hasUnloadedUnqueuedPlanetsFlag)
+                    {
+                        float distanceToStar = Vector3.Distance(GameMain.mainPlayer.position, star.position);
+                        if (distanceToStar < distanceToClosestStarWithUnloadedPlanets)
+                        {
+                            distanceToClosestStarWithUnloadedPlanets = distanceToStar;
+                            closestStarWithUnloadedPlanets = star;
+                        }
                     }
                 }
-                //Logger.LogInfo("Of " + planetCount.ToString() + " total planets, resource data has been collected for " + loadedPlanetCount.ToString() + " planets.");
+
+                progressImage.fillAmount = (float)loadedPlanetCount / planetCount;
+
+                if (closestStarWithUnloadedPlanets != null)
+                {
+                    Logger.LogInfo("Requesting " + closestStarWithUnloadedPlanets.planets.Length + " planets be loaded around " + closestStarWithUnloadedPlanets.displayName);
+                    foreach (PlanetData planet in closestStarWithUnloadedPlanets.planets)
+                    {
+                        planet.Load();
+                    }
+                    return;
+                }
 
                 if (loadedPlanetCount == planetCount)
                 {
@@ -270,7 +315,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 else
                 {
-                    progressImage.fillAmount = (float)loadedPlanetCount / planetCount;
+                    Logger.LogInfo("Waiting for final " + (planetCount - loadedPlanetCount).ToString() + " planet(s) to load");
                 }
             }
         }
@@ -614,7 +659,8 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                 }
 
-                if (PlanetModelingManager.genPlanetReqList.Count == 0 &&
+                if (!spreadsheetGenRequestFlag &&
+                    PlanetModelingManager.genPlanetReqList.Count == 0 &&
                     PlanetModelingManager.fctPlanetReqList.Count == 0 &&
                     PlanetModelingManager.modPlanetReqList.Count == 0)
                 {
