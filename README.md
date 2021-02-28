@@ -58,15 +58,10 @@ The game does not keep all resource information loaded.  So once spreadsheet gen
 The configuration file is called greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg.  It is generated the first time you run the game with this mod installed.  On Windows 10 it is located at
 "%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg".  
 
-### Output Path Configurable
-By default the spreadsheet is saved on Windows to DSP_Star_Sector_Resources.csv to your Documents folder and on Linux to just DSP_Star_Sector_Resources.csv.  The spreadsheet output path can be changed by specifying a different path in this config file.
-
-### Save Trigger Configurable
-By default the generation of the spreadsheet is performed when starting and pausing a game.  Both of these triggers can be enabled/disabled in the config file.
-
-### Planet Loading Configurable
-By default this mod loads all planets.  This is the only way to get all the planet resource data.  This step can be skipped if you want to save on memory.  When disabling this flag the spreadsheet will indicate "Unloaded" for all fields that are unavailable because planet loading was skipped.
-When planet loading is enabled, you can also enable planet unloading to save on memory.
+ - **Output Path:**  By default the spreadsheet is saved on Windows to DSP_Star_Sector_Resources_${seed}-${starCount}.csv to your Documents folder and on Linux to just DSP_Star_Sector_Resources.csv.  The spreadsheet output path can be changed by specifying a different path in this config file.
+ - **Save Trigger:**  By default the generation of the spreadsheet is performed when the user clicks the generation button on the HUD.  Generation can also be enabled to automatically begin when starting and/or pausing a game.
+ - **Planet Loading and Unloading:**  By default this mod loads all planets.  This is the only way to get all the planet resource data.  When disabling this flag the spreadsheet will indicate "Unloaded" for all fields that are unavailable because planet loading was skipped.  When planet loading is enabled, you can also enable planet unloading to save on memory.
+ - **Spreadsheet Formatting:**  By default columns are separated with a comma, but that can be changed.  By default floats are in your local format, but that can be changed.  By default floats are output with their full precision, but that change be changed.
 
 ## Installation
 This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5775 on Windows 10.
@@ -79,6 +74,8 @@ This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderst
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### v2.0.2
+ - Added configurability for number format localization, column separators, and floating point precision. (Contributed by [ctcDNightmare](https://github.com/ctcDNightmare).)
 ### v2.0.1
  - ${seed} and ${starCount} can now be optionally included in the output filename generation.  (Contributed by [ctcDNightmare](https://github.com/ctcDNightmare).)
  - Small improvement in progress bar accuracy.

@@ -35,7 +35,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "2.0.1.0";
+        public const string pluginVersion = "2.0.2.0";
         public static bool enablePlanetLoadingFlag = true;
         public static bool enablePlanetUnloadingFlag = true;
         public static bool enableOnStartTrigger = false;
