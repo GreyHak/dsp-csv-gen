@@ -10,6 +10,12 @@ If you like this mod, please click the thumbs up at the [top of the page](https:
 
 If you have issues with this mod, please report them on [GitHub](https://github.com/GreyHak/dsp-csv-gen/issues).  I try to respond within 12 hours.
 
+## Usage
+Generation of the resource spreadsheet is triggered with a button click, by loading a save or by pausing the game.
+![TriggerButton.jpg](https://raw.githubusercontent.com/GreyHak/dsp-csv-gen/master/TriggerButton.jpg)
+
+The game does not keep all resource information loaded.  So once spreadsheet generation is requested there is a delay of less than a minute until the .csv file is created.
+
 ## Exported Details
 The generated spreadsheet will contain columns for the following data.
  - Planet Name
@@ -48,12 +54,6 @@ The generated spreadsheet will contain columns for the following data.
    - _ Deuterium rate
    - _ Fire ice rate
 
-## Usage
-Generation of the resource spreadsheet is triggered with a button click, by loading a save or by pausing the game.
-![TriggerButton.jpg](https://raw.githubusercontent.com/GreyHak/dsp-csv-gen/master/TriggerButton.jpg)
-
-The game does not keep all resource information loaded.  So once spreadsheet generation is requested there is a delay of less than a minute until the .csv file is created.
-
 ## Config File
 The configuration file is called greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg.  It is generated the first time you run the game with this mod installed.  On Windows 10 it is located at
 "%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg".  
@@ -76,6 +76,7 @@ The source code for this mod is available for download, review and forking on Gi
 ## Change Log
 ### v2.0.2
  - Added configurability for number format localization, column separators, and floating point precision. (Contributed by [ctcDNightmare](https://github.com/ctcDNightmare).)
+ - README corrections.
 ### v2.0.1
  - ${seed} and ${starCount} can now be optionally included in the output filename generation.  (Contributed by [ctcDNightmare](https://github.com/ctcDNightmare).)
  - Small improvement in progress bar accuracy.
