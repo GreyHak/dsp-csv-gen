@@ -82,6 +82,12 @@ namespace StarSectorResourceSpreadsheetGenerator
                 return;
             }
 
+            if (spreadsheetGenRequestFlag)
+            {
+                Logger.LogInfo("Spreadsheet generation already in progress.");
+                return;
+            }
+
             Logger.LogInfo("Scanning planets...");
 
             int planetCount = 0;
@@ -111,7 +117,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 if (hasUnloadedPlanetsFlag)
                 {
-                    float distanceToStar = Vector3.Distance(GameMain.mainPlayer.position, star.position);
+                    float distanceToStar = Vector3.Distance(GameMain.localStar.position, star.position);
                     if (distanceToStar < distanceToClosestStarWithUnloadedPlanets)
                     {
                         distanceToClosestStarWithUnloadedPlanets = distanceToStar;
@@ -285,7 +291,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                     if (hasUnloadedUnqueuedPlanetsFlag)
                     {
-                        float distanceToStar = Vector3.Distance(GameMain.mainPlayer.position, star.position);
+                        float distanceToStar = Vector3.Distance(GameMain.localStar.position, star.position);
                         if (distanceToStar < distanceToClosestStarWithUnloadedPlanets)
                         {
                             distanceToClosestStarWithUnloadedPlanets = distanceToStar;
