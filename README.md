@@ -14,7 +14,7 @@ If you have issues with this mod, please report them on [GitHub](https://github.
 Generation of the resource spreadsheet is triggered with a button click, by loading a save or by pausing the game.
 ![TriggerButton.jpg](https://raw.githubusercontent.com/GreyHak/dsp-csv-gen/master/TriggerButton.jpg)
 
-The game does not keep all resource information loaded.  So once spreadsheet generation is requested there is a delay of less than a minute until the .csv file is created.
+The game does not keep all resource information loaded.  So once spreadsheet generation is requested there is a delay until the .csv file is created.  You can see the progress shown on the HUD button.
 
 ## Exported Details
 The generated spreadsheet will contain columns for the following data.
@@ -74,6 +74,9 @@ This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderst
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### v3.0.0
+ - Fast new vein generation algorithm which also minimizes memory usage.  No more 2-hour exports for 1024 stars.
+ - Fixed a bug added in v2.0.2's update for localization. If the singularity value had multiple flags set, it would extend beyond its column.
 ### v2.0.2
  - Added configurability for number format localization, column separators, and floating point precision. (Contributed by [ctcDNightmare](https://github.com/ctcDNightmare).)
  - README corrections.
