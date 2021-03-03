@@ -75,6 +75,7 @@ The source code for this mod is available for download, review and forking on Gi
 ## Change Log
 ### v3.0.1
  - Further speed optimizations.  Thanks to [Therzok](https://github.com/Therzok) for the suggestions.
+ - Additional output data which can be enabled in the configuration file.
 ### v3.0.0-beta
  - Fast new vein generation algorithm which also minimizes memory usage.  No more 2-hour exports for 1024 stars.  Now exporting 1024 stars (8000 planets) has been timed under 15 minutes.
  - Fixed a bug added in v2.0.2's update for localization. If the singularity value had multiple flags set, it would extend beyond its column.
