@@ -23,16 +23,15 @@ The generated spreadsheet will contain columns for the following data.
    - _ Star Name
    - _ Star Dyson Luminosity
    - _ Star Type
-   - _ Star Mass
    - _ Star Position X, Y, Z
+   - _ Plus more. See the config file.
  - Planet Properties
    - _ Wind Strength
    - _ Luminosity
    - _ Planet Type
    - _ Land Percent
    - _ Singularity (e.g. Tidally Locked)
-   - _ Planet/Moon
-   - _ Orbital Inclination
+   - _ Plus more. See the config file.
  - Rocky Planet/Moon Resources
    - _ Ocean Type
    - _ Iron quantity
@@ -59,9 +58,9 @@ The configuration file is called greyhak.dysonsphereprogram.resourcespreadsheetg
 "%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg".  
 
  - **Output Path:**  By default the spreadsheet is saved on Windows to DSP_Star_Sector_Resources_${seed}-${starCount}.csv to your Documents folder and on Linux to just DSP_Star_Sector_Resources.csv.  The spreadsheet output path can be changed by specifying a different path in this config file.
- - **Save Trigger:**  By default the generation of the spreadsheet is performed when the user clicks the generation button on the HUD.  Generation can also be enabled to automatically begin when starting and/or pausing a game.
  - **Planet Loading and Unloading:**  By default this mod loads all planets.  This is the only way to get all the planet resource data.  When disabling this flag the spreadsheet will indicate "Unloaded" for all fields that are unavailable because planet loading was skipped.  When planet loading is enabled, you can also enable planet unloading to save on memory.
  - **Spreadsheet Formatting:**  By default columns are separated with a comma, but that can be changed.  By default floats are in your local format, but that can be changed.  By default floats are output with their full precision, but that change be changed.
+ - **More Data:**  16 parameters, 6 for the star and 10 for the planet, can be configurably enabled.  Less clutter for most people.  Extra data for those that want it.
 
 ## Installation
 This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5775 on Windows 10.
@@ -79,6 +78,7 @@ The source code for this mod is available for download, review and forking on Gi
 ### v3.0.0-beta
  - Fast new vein generation algorithm which also minimizes memory usage.  No more 2-hour exports for 1024 stars.  Now exporting 1024 stars (8000 planets) has been timed under 15 minutes.
  - Fixed a bug added in v2.0.2's update for localization. If the singularity value had multiple flags set, it would extend beyond its column.
+ - Removed start triggers on game start and pause now that there is a button on the HUD.
  - Thanks to Re=L and JackPS9 on Discord for testing and feedback on the beta.
 ### v2.0.2
  - Added configurability for number format localization, column separators, and floating point precision. (Contributed by [ctcDNightmare](https://github.com/ctcDNightmare).)
