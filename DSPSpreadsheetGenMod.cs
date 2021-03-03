@@ -115,10 +115,15 @@ namespace StarSectorResourceSpreadsheetGenerator
                     if (!planetResourceData.ContainsKey(planet.id) && (planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0))
                     {
                         planetsToLoad.Add(planet);
+
+                        // Code for testing simultanious loading.
+                        //System.Random random = new System.Random(42);  // Move this before the loop when using to test
+                        //if (random.NextDouble() < 0.1)  // 10%
+                        //    planet.Load();
                     }
                     else
                     {
-                        planetResourceData[planet.id] = CapturePlanetResourceData(planet);
+                        CapturePlanetResourceData(planet);
                     }
                 }
             }
@@ -127,18 +132,15 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 Logger.LogInfo("Planet resource data already available.  Proceeding with resource spreadsheet generation.");
                 GenerateResourceSpreadsheet();
-                progressImage.fillAmount = 0;
             }
             else if (!enablePlanetLoadingFlag)
             {
                 Logger.LogInfo("Skipping planet load.  Proceeding with resource spreadsheet generation.  Speadsheet will be incomplete.");
                 GenerateResourceSpreadsheet();
-                progressImage.fillAmount = 0;
             }
             else
             {
                 Logger.LogInfo(planetsToLoad.Count.ToString() + " planets to be loaded.  Waiting for planets to load.");
-                progressImage.fillAmount = (float)planetResourceData.Count / planetCount;
 
                 Monitor.Enter(planetComputeThreadMutexLock);
                 spreadsheetGenRequestFlag = true;
@@ -319,7 +321,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 // insert values for possible placeholders in filename
                 String spreadsheetFileName = spreadsheetFileNameTemplate;
-                spreadsheetFileName = spreadsheetFileName.Replace("${seed}", GameMain.galaxy.seed.ToString("D8"));
+                spreadsheetFileName = spreadsheetFileName.Replace("${seed}", GameMain.galaxy.seed.ToString("D8"));  // D8 will prefix the integer with zeros to make it always 8 characters long.
                 spreadsheetFileName = spreadsheetFileName.Replace("${starCount}", GameMain.galaxy.starCount.ToString());
 
                 // Make sure the folder we're trying to write in exists.
@@ -367,9 +369,12 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 Logger.LogInfo("ERROR: Exception (catch-all) while generating and saving resource spreadsheet.");
             }
+
+            progressImage.fillAmount = 0;
+            spreadsheetGenRequestFlag = false;
         }
 
-        public static String CapturePlanetResourceData(PlanetData planet)
+        public static void CapturePlanetResourceData(PlanetData planet)
         {
             StarData star = planet.star;
             string floatFormat = "";
@@ -379,71 +384,63 @@ namespace StarSectorResourceSpreadsheetGenerator
             }
 
             var sb = new StringBuilder();
-            List<String> line = new List<String>
-            {
-                planet.displayName,
-                star.displayName,
-                star.dysonLumino.ToString(floatFormat, spreadsheetLocale),
-                star.typeString,
-                star.mass.ToString(floatFormat, spreadsheetLocale),
-                star.position.x.ToString(floatFormat, spreadsheetLocale),
-                star.position.y.ToString(floatFormat, spreadsheetLocale),
-                star.position.z.ToString(floatFormat, spreadsheetLocale),
-                planet.windStrength.ToString(floatFormat, spreadsheetLocale),
-                planet.luminosity.ToString(floatFormat, spreadsheetLocale),
-                planet.typeString,
-                planet.landPercent.ToString(floatFormat, spreadsheetLocale),
-                '"' + planet.singularity.ToString() + '"',  // planet.singularity can contain commas, so it must be quoted.
-                planet.orbitAround.ToString(),
-                planet.orbitInclination.ToString(floatFormat, spreadsheetLocale)
-            };
+            sb.Append(planet.displayName).Append(spreadsheetColumnSeparator);
+            sb.Append(star.displayName).Append(spreadsheetColumnSeparator);
+            sb.Append(star.dysonLumino.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append(star.typeString).Append(spreadsheetColumnSeparator);
+            sb.Append(star.mass.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append(star.position.x.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append(star.position.y.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append(star.position.z.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append(planet.windStrength.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append(planet.luminosity.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append(planet.typeString).Append(spreadsheetColumnSeparator);
+            sb.Append(planet.landPercent.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append("\"" + planet.singularity + "\"").Append(spreadsheetColumnSeparator);  // planet.singularity can contain commas, so it must be quoted.
+            sb.Append(planet.orbitAround).Append(spreadsheetColumnSeparator);
+            sb.Append(planet.orbitInclination.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
 
             if (planet.type == EPlanetType.Gas)
             {
-                line.Add("None");  // Ocean
+                sb.Append("None").Append(spreadsheetColumnSeparator);  // Ocean
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
-                    line.Add("0");
+                    sb.Append("0").Append(spreadsheetColumnSeparator);
                 }
                 foreach (int item in gases)
                 {
                     int index = Array.IndexOf(planet.gasItems, item);
                     if (index == -1)
                     {
-                        line.Add("0");
+                        sb.Append("0").Append(spreadsheetColumnSeparator);
                     }
                     else
                     {
-                        line.Add(planet.gasSpeeds[index].ToString(floatFormat, spreadsheetLocale));
+                        sb.Append(planet.gasSpeeds[index].ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
                     }
                 }
-                foreach(string entry in line)
-                {
-                    sb.Append(entry).Append(spreadsheetColumnSeparator);
-                }
-                sb.Append(Environment.NewLine);
             }
             else
             {
                 if (planet.waterItemId == 0)
                 {
-                    line.Add("None");
+                    sb.Append("None").Append(spreadsheetColumnSeparator);
                 }
                 else if (planet.waterItemId == -1)
                 {
-                    line.Add("Lava");
+                    sb.Append("Lava").Append(spreadsheetColumnSeparator);
                 }
                 else
                 {
                     ItemProto waterItem = LDB.items.Select(planet.waterItemId);
-                    line.Add(waterItem.name);
+                    sb.Append(waterItem.name).Append(spreadsheetColumnSeparator);
                 }
 
                 if (planet.veinGroups.Length == 0)
                 {
                     foreach (VeinProto item in LDB.veins.dataArray)
                     {
-                        line.Add("Unloaded");
+                        sb.Append("Unloaded").Append(spreadsheetColumnSeparator);
                     }
                 }
                 else
@@ -454,27 +451,27 @@ namespace StarSectorResourceSpreadsheetGenerator
                         long amount = planet.veinAmounts[(int)type];
                         if (type == EVeinType.Oil)
                         {
-                            line.Add(((double)amount * VeinData.oilSpeedMultiplier).ToString(floatFormat, spreadsheetLocale));
+                            sb.Append(((double)amount * VeinData.oilSpeedMultiplier).ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
                         }
                         else
                         {
-                            line.Add(amount.ToString(spreadsheetLocale));
+                            sb.Append(amount.ToString(spreadsheetLocale)).Append(spreadsheetColumnSeparator);
                         }
                         type++;
                     }
                 }
                 foreach (int item in gases)
                 {
-                    line.Add("0");
+                    sb.Append("0").Append(spreadsheetColumnSeparator);
                 }
-                foreach (string entry in line)
-                {
-                    sb.Append(entry).Append(spreadsheetColumnSeparator);
-                }
-                sb.Append(Environment.NewLine);
             }
 
-            return sb.ToString();
+            sb.Append(Environment.NewLine);
+
+            planetResourceData[planet.id] = sb.ToString();
+            progressImage.fillAmount = (float)planetResourceData.Count / planetCount;
+
+            // Average execution time:  43.4 usec with List.Add.  41.2 usec with only StringBuilder.Append.  (6% improvement)
         }
 
         public static RectTransform triggerButton;
@@ -529,7 +526,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     Image prefabProgress = GameObject.Find("tech-progress").GetComponent<Image>();
                     progressImage = GameObject.Instantiate<Image>(prefabProgress);
                     progressImage.gameObject.name = "greyhak-cvs-trigger-image";
-                    progressImage.fillAmount = 0.0f;
+                    progressImage.fillAmount = 0;
                     //progressImage.color = new Color(0.2f, 0.2f, 1);
                     progressImage.type = Image.Type.Filled;
                     progressImage.rectTransform.SetParent(parent);
@@ -623,6 +620,8 @@ namespace StarSectorResourceSpreadsheetGenerator
 
         private static void VeinGenerationThread()
         {
+            PlanetData planetCopy = new PlanetData();
+
             Logger.LogInfo("Vein generation thread started.");
             while (planetComputeThreadState == PlanetModelingManager.ThreadFlag.Running)
             {
@@ -647,16 +646,14 @@ namespace StarSectorResourceSpreadsheetGenerator
                                 {
                                     if (planet.veinGroups.Length != 0)
                                     {
-                                        planetResourceData[planet.id] = CapturePlanetResourceData(planet);
-                                        progressImage.fillAmount = (float)planetResourceData.Count / planetCount;
+                                        CapturePlanetResourceData(planet);
                                         Logger.LogInfo(planetOrig.displayName + " picked up.");
                                     }
                                     // If the planet data hasn't been captured yet, and the data isn't available
                                     // then the planet better still be loading, or we have a problem.
                                     else if (!planet.loading)
                                     {
-                                        planetResourceData[planet.id] = CapturePlanetResourceData(planet);
-                                        progressImage.fillAmount = (float)planetResourceData.Count / planetCount;
+                                        CapturePlanetResourceData(planet);
                                         Logger.LogError("ERROR: Planet state mismatch.  Skipping planet.  Output will not contain data for " + planet.displayName);
                                     }
                                 }
@@ -666,8 +663,6 @@ namespace StarSectorResourceSpreadsheetGenerator
                         if (planetResourceData.Count == planetCount)
                         {
                             GenerateResourceSpreadsheet();
-                            progressImage.fillAmount = 0;
-                            spreadsheetGenRequestFlag = false;
                         }
                         else
                         {
@@ -675,8 +670,6 @@ namespace StarSectorResourceSpreadsheetGenerator
                             {
                                 Logger.LogWarning("WARNING: Timeout.  Data for only " + planetResourceData.Count.ToString() + " of " + planetCount.ToString() + " planets available.  Proceeding with spreadsheet generation anyway.");
                                 GenerateResourceSpreadsheet();
-                                progressImage.fillAmount = 0;
-                                spreadsheetGenRequestFlag = false;
                             }
                         }
                     }
@@ -692,8 +685,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     // There's very little chance this is going to happen, but let's catch it just in case.
                     if (planetOrig.veinGroups.Length != 0)
                     {
-                        planetResourceData[planetOrig.id] = CapturePlanetResourceData(planetOrig);
-                        progressImage.fillAmount = (float)planetResourceData.Count / planetCount;
+                        CapturePlanetResourceData(planetOrig);
                         Logger.LogInfo(planetOrig.displayName + " captured from original.");
                     }
                     else if (planetOrig.loading)
@@ -704,7 +696,6 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                     else
                     {
-                        PlanetData planetCopy = new PlanetData();
                         planetCopy.galaxy = planetOrig.galaxy;
                         planetCopy.star = planetOrig.star;
                         planetCopy.seed = planetOrig.seed;
@@ -799,18 +790,15 @@ namespace StarSectorResourceSpreadsheetGenerator
                         //planetCopy.kEnterAltitude = planetOrig.kEnterAltitude;
 
                         QuickPlanetLoad(planetCopy);
-                        planetResourceData[planetCopy.id] = CapturePlanetResourceData(planetCopy);
+                        CapturePlanetResourceData(planetCopy);
 
                         if (planetResourceData.Count == planetCount)
                         {
                             GenerateResourceSpreadsheet();
-                            progressImage.fillAmount = 0;
-                            spreadsheetGenRequestFlag = false;
                         }
                         else
                         {
                             Logger.LogInfo(planetCopy.displayName + " quick-loaded.");
-                            progressImage.fillAmount = (float)planetResourceData.Count / planetCount;
                         }
                     }
                 }
