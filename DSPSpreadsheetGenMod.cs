@@ -35,7 +35,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "3.0.1.0";
+        public const string pluginVersion = "3.0.2.0";
         public static bool enablePlanetLoadingFlag = true;
         public static bool enableOnStartTrigger = false;
         public static bool enableOnPauseTrigger = false;
@@ -832,7 +832,8 @@ namespace StarSectorResourceSpreadsheetGenerator
                         planetCopy.oceanMaterial = planetOrig.oceanMaterial;
                         planetCopy.atmosMaterial = planetOrig.atmosMaterial;
                         planetCopy.minimapMaterial = planetOrig.minimapMaterial;
-                        planetCopy.reformMaterial = planetOrig.reformMaterial;
+                        //CHANGE: planetCopy.reformMaterial0 = planetOrig.reformMaterial0;
+                        //CHANGE: planetCopy.reformMaterial1 = planetOrig.reformMaterial1;
                         planetCopy.heightmap = planetOrig.heightmap;
                         planetCopy.ambientDesc = planetOrig.ambientDesc;
                         //planetCopy.ambientSfx = planetOrig.ambientSfx;

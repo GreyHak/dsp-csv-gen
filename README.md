@@ -63,7 +63,7 @@ The configuration file is called greyhak.dysonsphereprogram.resourcespreadsheetg
  - **More Data:**  16 parameters, 6 for the star and 10 for the planet, can be configurably enabled.  Less clutter for most people.  Extra data for those that want it.
 
 ## Installation
-This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5775 on Windows 10.
+This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5827 on Windows 10.
 
 To manually install this mod, add the DSPResourceSpreadsheetGenMod.dll to your %PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\ folder.
 
@@ -73,6 +73,8 @@ This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderst
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### v3.0.2
+ - Rebuild required for the recent Dyson Sphere Program [0.6.16.5827 update](https://store.steampowered.com/news/app/1366540?updates=true&emclan=103582791468239772&emgid=3064108587879145729).
 ### v3.0.1
  - Further speed optimizations.  Thanks to [Therzok](https://github.com/Therzok) for the suggestions.
  - Additional output data which can be enabled in the configuration file.
