@@ -73,6 +73,8 @@ This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderst
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
+### Next
+ - Another speed optimization from [Therzok](https://github.com/Therzok).
 ### v3.0.2
  - Rebuild required for the recent Dyson Sphere Program [0.6.16.5827 update](https://store.steampowered.com/news/app/1366540?updates=true&emclan=103582791468239772&emgid=3064108587879145729).
 ### v3.0.1

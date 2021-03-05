@@ -147,6 +147,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             Logger.LogInfo("Scanning planets...");
             planetsToLoad.Clear();
 
+            StringBuilder sb = new StringBuilder(8192);
             foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
             {
                 foreach (PlanetData planet in star.planets)
@@ -162,7 +163,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                     else
                     {
-                        CapturePlanetResourceData(planet);
+                        CapturePlanetResourceData(planet, sb);
                     }
                 }
             }
@@ -308,7 +309,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 Logger.LogInfo("Begin resource spreadsheet generation...");
 
-                var sb = new StringBuilder();
+                var sb = new StringBuilder(8192);
                 sb.Append("Planet Name").Append(spreadsheetColumnSeparator);
                 sb.Append("Star Name").Append(spreadsheetColumnSeparator);
                 sb.Append("Star Dyson Luminosity").Append(spreadsheetColumnSeparator);
@@ -422,7 +423,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             spreadsheetGenRequestFlag = false;
         }
 
-        public static void CapturePlanetResourceData(PlanetData planet)
+        public static void CapturePlanetResourceData(PlanetData planet, StringBuilder sb)
         {
             StarData star = planet.star;
             string floatFormat = "";
@@ -431,7 +432,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 floatFormat = "F" + spreadsheetFloatPrecision.ToString();
             }
 
-            var sb = new StringBuilder();
+            sb.Length = 0;
             sb.Append(planet.displayName).Append(spreadsheetColumnSeparator);
             sb.Append(star.displayName).Append(spreadsheetColumnSeparator);
             sb.Append(star.dysonLumino.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
@@ -544,8 +545,6 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             planetResourceData[planet.id] = sb.ToString();
             progressImage.fillAmount = (float)planetResourceData.Count / planetCount;
-
-            // Average execution time:  43.4 usec with List.Add.  41.2 usec with only StringBuilder.Append.  (6% improvement)
         }
 
         public static RectTransform triggerButton;
@@ -695,6 +694,7 @@ namespace StarSectorResourceSpreadsheetGenerator
         private static void VeinGenerationThread()
         {
             PlanetData planetCopy = new PlanetData();
+            StringBuilder sb = new StringBuilder(8192);
 
             Logger.LogInfo("Vein generation thread started.");
             while (planetComputeThreadState == PlanetModelingManager.ThreadFlag.Running)
@@ -720,14 +720,14 @@ namespace StarSectorResourceSpreadsheetGenerator
                                 {
                                     if (planet.veinGroups.Length != 0)
                                     {
-                                        CapturePlanetResourceData(planet);
+                                        CapturePlanetResourceData(planet, sb);
                                         Logger.LogInfo(planetOrig.displayName + " picked up.");
                                     }
                                     // If the planet data hasn't been captured yet, and the data isn't available
                                     // then the planet better still be loading, or we have a problem.
                                     else if (!planet.loading)
                                     {
-                                        CapturePlanetResourceData(planet);
+                                        CapturePlanetResourceData(planet, sb);
                                         Logger.LogError("ERROR: Planet state mismatch.  Skipping planet.  Output will not contain data for " + planet.displayName);
                                     }
                                 }
@@ -759,7 +759,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     // There's very little chance this is going to happen, but let's catch it just in case.
                     if (planetOrig.veinGroups.Length != 0)
                     {
-                        CapturePlanetResourceData(planetOrig);
+                        CapturePlanetResourceData(planetOrig, sb);
                         Logger.LogInfo(planetOrig.displayName + " captured from original.");
                     }
                     else if (planetOrig.loading)
@@ -865,7 +865,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                         //planetCopy.kEnterAltitude = planetOrig.kEnterAltitude;
 
                         QuickPlanetLoad(planetCopy);
-                        CapturePlanetResourceData(planetCopy);
+                        CapturePlanetResourceData(planetCopy, sb);
 
                         if (planetResourceData.Count == planetCount)
                         {
