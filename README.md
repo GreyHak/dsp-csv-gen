@@ -8,7 +8,7 @@ What to know what tidally locked planets are around high-luminosity stars?  Want
 
 If you like this mod, please click the thumbs up at the [top of the page](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) (next to the Total rating).  That would be a nice thank you for me, and help other people to find a mod you enjoy.
 
-If you have issues with this mod, please report them on [GitHub](https://github.com/GreyHak/dsp-csv-gen/issues).  I try to respond within 12 hours.
+If you have issues with this mod, please report them on [GitHub](https://github.com/GreyHak/dsp-csv-gen/issues).  I try to respond within 12 hours.    You can also contact me at GreyHak#2995 on the [DSP Modding](https://discord.gg/XxhyTNte) Discord #tech-support channel..
 
 ## Usage
 Generation of the resource spreadsheet is triggered with a button click, by loading a save or by pausing the game.
@@ -54,26 +54,26 @@ The generated spreadsheet will contain columns for the following data.
    - _ Fire ice rate
 
 ## Config File
-The configuration file is called greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg.  It is generated the first time you run the game with this mod installed.  On Windows 10 it is located at
-"%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg".  
+The configuration file is called `greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg`.  It is generated the first time you run the game with this mod installed.  On Windows 10 it is located at `%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg`.
 
- - **Output Path:**  By default the spreadsheet is saved on Windows to DSP_Star_Sector_Resources_${seed}-${starCount}.csv to your Documents folder and on Linux to just DSP_Star_Sector_Resources.csv.  The spreadsheet output path can be changed by specifying a different path in this config file.
+ - **Output Path:**  By default the spreadsheet is saved on Windows to `DSP_Star_Sector_Resources_${seed}-${starCount}.csv` to your Documents folder and on Linux to just `DSP_Star_Sector_Resources_${seed}-${starCount}.csv`.  The spreadsheet output path can be changed by specifying a different path in this config file.
  - **Planet Loading and Unloading:**  By default this mod loads all planets.  This is the only way to get all the planet resource data.  When disabling this flag the spreadsheet will indicate "Unloaded" for all fields that are unavailable because planet loading was skipped.  When planet loading is enabled, you can also enable planet unloading to save on memory.
  - **Spreadsheet Formatting:**  By default columns are separated with a comma, but that can be changed.  By default floats are in your local format, but that can be changed.  By default floats are output with their full precision, but that change be changed.
- - **More Data:**  16 parameters, 6 for the star and 10 for the planet, can be configurably enabled.  Less clutter for most people.  Extra data for those that want it.
+ - **More Data:**  17 parameters, 7 for the star and 10 for the planet, can be configurably enabled.  Less clutter for most people.  Extra data for those that want it.
 
 ## Installation
 This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5827 on Windows 10.
 
-To manually install this mod, add the DSPResourceSpreadsheetGenMod.dll to your %PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\ folder.
+To manually install this mod, add the `DSPResourceSpreadsheetGenMod.dll` to your `%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\` folder.
 
-This mod can also be installed using ebkr's [r2modman dsp](https://dsp.thunderstore.io/package/ebkr/r2modman_dsp/) mod manager by clicking "Install with Mod Manager" on the [DSP Modding](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) site.
+This mod can also be installed using ebkr's [r2modman](https://dsp.thunderstore.io/package/ebkr/r2modman/) mod manager by clicking "Install with Mod Manager" on the [DSP Modding](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) site.
 
 ## Open Source
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
 ### Next
+ - Added an additional output parameter, distance from star cluster center, which can be enabled in the config file.
  - Another speed optimization from [Therzok](https://github.com/Therzok).
 ### v3.0.2
  - Rebuild required for the recent Dyson Sphere Program [0.6.16.5827 update](https://store.steampowered.com/news/app/1366540?updates=true&emclan=103582791468239772&emgid=3064108587879145729).

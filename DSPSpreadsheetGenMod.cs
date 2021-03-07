@@ -60,6 +60,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             public static bool starMass = false;
             public static bool starRadius = false;
             public static bool starTemperature = false;
+            public static bool distanceFromStarClusterCenter = false;
             public static bool planetOrbitalPeriod = false;
             public static bool planetOrbitAround = false;
             public static bool planetOrbitAroundPlanet = false;
@@ -100,6 +101,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             ConfigExtraFlags.starMass = Config.Bind<bool>("ExtraData", "StarMass", ConfigExtraFlags.starMass, "Add stars' mass to the spreadsheet").Value;
             ConfigExtraFlags.starRadius = Config.Bind<bool>("ExtraData", "StarRadius", ConfigExtraFlags.starRadius, "Add stars' radius to the spreadsheet").Value;
             ConfigExtraFlags.starTemperature = Config.Bind<bool>("ExtraData", "StarTemperature", ConfigExtraFlags.starTemperature, "Add stars' temperature to the spreadsheet").Value;
+            ConfigExtraFlags.distanceFromStarClusterCenter = Config.Bind<bool>("ExtraData", "DistanceFromStarClusterCenter", ConfigExtraFlags.distanceFromStarClusterCenter, "Add star's distance from the center of the star cluster.  This is typically the location of the initial planet's star.").Value;
             ConfigExtraFlags.planetOrbitalPeriod = Config.Bind<bool>("ExtraData", "PlanetOrbitalPeriod", ConfigExtraFlags.planetOrbitalPeriod, "Add planets' orbital period to the spreadsheet").Value;
             ConfigExtraFlags.planetOrbitAround = Config.Bind<bool>("ExtraData", "PlanetOrbitAround", ConfigExtraFlags.planetOrbitAround, "Add type of orbital relationship to the spreadsheet").Value;
             ConfigExtraFlags.planetOrbitAroundPlanet = Config.Bind<bool>("ExtraData", "PlanetOrbitAroundPlanet", ConfigExtraFlags.planetOrbitAroundPlanet, "Add name of planet the planets orbit, if they orbit a planet, to the spreadsheet").Value;
@@ -324,6 +326,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 if (ConfigExtraFlags.starMass) { sb.Append("Star Mass").Append(spreadsheetColumnSeparator); }
                 if (ConfigExtraFlags.starRadius) { sb.Append("Star Radius").Append(spreadsheetColumnSeparator); }
                 if (ConfigExtraFlags.starTemperature) { sb.Append("Star Temperature").Append(spreadsheetColumnSeparator); }
+                if (ConfigExtraFlags.distanceFromStarClusterCenter) { sb.Append("Distance from Cluster Center").Append(spreadsheetColumnSeparator); }
                 if (ConfigExtraFlags.planetOrbitalPeriod) { sb.Append("Orbital Period").Append(spreadsheetColumnSeparator); }
                 if (ConfigExtraFlags.planetOrbitAround) { sb.Append("Planet/Moon").Append(spreadsheetColumnSeparator); }
                 if (ConfigExtraFlags.planetOrbitAroundPlanet) { sb.Append("Orbiting").Append(spreadsheetColumnSeparator); }
@@ -447,6 +450,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             if (ConfigExtraFlags.starMass) { sb.Append(star.mass.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
             if (ConfigExtraFlags.starRadius) { sb.Append(star.radius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
             if (ConfigExtraFlags.starTemperature) { sb.Append(star.temperature.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
+            if (ConfigExtraFlags.distanceFromStarClusterCenter) { sb.Append(Vector3.Distance(star.position, new Vector3(0,0,0)).ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
             if (ConfigExtraFlags.planetOrbitalPeriod) { sb.Append(planet.orbitalPeriod.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
             if (ConfigExtraFlags.planetOrbitAround) { sb.Append(planet.orbitAround).Append(spreadsheetColumnSeparator); }
             if (ConfigExtraFlags.planetOrbitAroundPlanet)
@@ -554,7 +558,7 @@ namespace StarSectorResourceSpreadsheetGenerator
         [HarmonyPrefix, HarmonyPatch(typeof(GameMain), "Begin")]
         public static void GameMain_Begin_Prefix()
         {
-            Logger.LogInfo("Game beginning");
+            //Logger.LogInfo("Game beginning");
 
             Monitor.Enter(planetComputeThreadMutexLock);
             spreadsheetGenRequestFlag = false;
@@ -576,7 +580,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 else
                 {
-                    Logger.LogInfo("Loading button");
+                    //Logger.LogInfo("Loading button");
                     RectTransform parent = GameObject.Find("Game Menu").GetComponent<RectTransform>();
                     RectTransform prefab = GameObject.Find("Game Menu/button-1-bg").GetComponent<RectTransform>();
                     Vector3 referencePosition = prefab.localPosition;
