@@ -1,4 +1,13 @@
-﻿using System.Reflection;
+﻿//
+// Copyright (c) 2021, Aaron Shumate
+// All rights reserved.
+//
+// This source code is licensed under the BSD-style license found in the
+// LICENSE.txt file in the root directory of this source tree. 
+//
+// Dyson Sphere Program is developed by Youthcat Studio and published by Gamera Game.
+
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -32,5 +41,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("3.0.2")]
-[assembly: AssemblyFileVersion("3.0.2")]
+[assembly: AssemblyVersion("3.0.3")]
+[assembly: AssemblyFileVersion("3.0.3")]

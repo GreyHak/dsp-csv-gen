@@ -1,6 +1,6 @@
 {
     "name": "DSP_Star_Sector_Resource_Spreadsheet_Generator",
-    "version_number": "3.0.2",
+    "version_number": "3.0.3",
     "website_url": "https://github.com/GreyHak/dsp-csv-gen",
     "description": "Generates a spreadsheet of all resources in the star sector.",
     "dependencies": [

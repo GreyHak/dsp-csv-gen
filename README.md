@@ -62,7 +62,7 @@ The configuration file is called `greyhak.dysonsphereprogram.resourcespreadsheet
  - **More Data:**  17 parameters, 7 for the star and 10 for the planet, can be configurably enabled.  Less clutter for most people.  Extra data for those that want it.
 
 ## Installation
-This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5827 on Windows 10.
+This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.6.16.5831 on Windows 10.
 
 To manually install this mod, add the `DSPResourceSpreadsheetGenMod.dll` to your `%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\` folder.
 
@@ -72,7 +72,7 @@ This mod can also be installed using ebkr's [r2modman](https://dsp.thunderstore.
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
 ## Change Log
-### Next
+### v3.0.3
  - Added an additional output parameter, distance from star cluster center, which can be enabled in the config file.
  - Another speed optimization from [Therzok](https://github.com/Therzok).
 ### v3.0.2
