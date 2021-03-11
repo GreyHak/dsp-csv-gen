@@ -12,7 +12,7 @@ If you have issues with this mod, please report them on [GitHub](https://github.
 
 ## Usage
 Generation of the resource spreadsheet is triggered with a button click, by loading a save or by pausing the game.
-![TriggerButton.jpg](https://raw.githubusercontent.com/GreyHak/dsp-csv-gen/master/TriggerButton.jpg)
+![Trigger Button image](https://raw.githubusercontent.com/GreyHak/dsp-csv-gen/master/TriggerButton.jpg)
 
 The game does not keep all resource information loaded.  So once spreadsheet generation is requested there is a delay until the .csv file is created.  You can see the progress shown on the HUD button.  It's been timed at 32 seconds for a 64-star system.
 
@@ -54,8 +54,11 @@ The generated spreadsheet will contain columns for the following data.
    - _ Fire ice rate
 
 ## Config File
-The configuration file is called `greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg`.  It is generated the first time you run the game with this mod installed.  On Windows 10 it is located at `%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg`.
+The configuration file is called `greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg`.  It is generated the first time you run the game with this mod installed.  On Windows 10 it is located at
+ - If you installed manually:  `%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg`
+ - If you installed with r2modman:  `C:\Users\<username>\AppData\Roaming\r2modmanPlus-local\DysonSphereProgram\profiles\Default\BepInEx\config\greyhak.dysonsphereprogram.resourcespreadsheetgen.cfg`
 
+Settings include:
  - **Output Path:**  By default the spreadsheet is saved on Windows to `DSP_Star_Sector_Resources_${seed}-${starCount}.csv` to your Documents folder and on Linux to just `DSP_Star_Sector_Resources_${seed}-${starCount}.csv`.  The spreadsheet output path can be changed by specifying a different path in this config file.
  - **Planet Loading and Unloading:**  By default this mod loads all planets.  This is the only way to get all the planet resource data.  When disabling this flag the spreadsheet will indicate "Unloaded" for all fields that are unavailable because planet loading was skipped.  When planet loading is enabled, you can also enable planet unloading to save on memory.
  - **Spreadsheet Formatting:**  By default columns are separated with a comma, but that can be changed.  By default floats are in your local format, but that can be changed.  By default floats are output with their full precision, but that change be changed.
