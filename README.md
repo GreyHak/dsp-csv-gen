@@ -6,6 +6,8 @@ This mod generates a comma-seperated-values, csv, file containing all the resour
 
 What to know what tidally locked planets are around high-luminosity stars?  Want to know what system has spinform stalagmite crystals, fractal silicon and crude oil to make particle broadband?  This mod is for you.
 
+Chinese support: The spreadsheet generation has been tested with Dyson Sphere Program configured for Chinese.  The generated file is always in a UTF-8 encoding.  If you want Chinese characters to appear correctly in your spreadsheet program, you need to open it using a UTF-8 encoding.  This has been tested in [OpenOffice Calc](https://www.openoffice.org/product/calc.html) by selecting the character set "Unicode (UTF-8)".
+
 If you like this mod, please click the thumbs up at the [top of the page](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) (next to the Total rating).  That would be a nice thank you for me, and help other people to find a mod you enjoy.
 
 If you have issues with this mod, please report them on [GitHub](https://github.com/GreyHak/dsp-csv-gen/issues).  I try to respond within 12 hours.    You can also contact me at GreyHak#2995 on the [DSP Modding](https://discord.gg/XxhyTNte) Discord #tech-support channel..
