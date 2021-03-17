@@ -35,7 +35,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "3.1.0";
+        public const string pluginVersion = "3.1.1";
 
         public static BepInEx.Configuration.ConfigEntry<bool> enablePlanetLoadingFlag;
         public static bool enableOnStartTrigger = false;
@@ -117,7 +117,7 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             Config.SettingChanged += OnConfigSettingChanged;
 
-            Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileNameTemplate + "\"");
+            Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileNameTemplate.Value + "\"");
 
             Harmony harmony = new Harmony(pluginGuid);
             harmony.PatchAll(typeof(SpreadsheetGenMod));

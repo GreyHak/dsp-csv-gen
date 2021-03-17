@@ -162,6 +162,8 @@ The source code for this mod is available for download, review and forking on Gi
 在BSD3条例许可下，本mod的源代码可供在[GitHub](https://github.com/GreyHak/dsp-csv-gen)下载、查看、克隆。
 
 ## Change Log
+### v3.1.1
+ - Minor bug fix in log entry of filename.
 ### v3.1.0
  - Added in-game reconfiguration changes and compatibility with [BepInEx.ConfigurationManager](https://github.com/BepInEx/BepInEx.ConfigurationManager).
  - Chinese README translation by Heihong.
