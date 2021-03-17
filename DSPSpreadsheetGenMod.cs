@@ -35,18 +35,19 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "3.0.3.0";
-        public static bool enablePlanetLoadingFlag = true;
+        public const string pluginVersion = "3.1.0.0";
+
+        public static BepInEx.Configuration.ConfigEntry<bool> enablePlanetLoadingFlag;
         public static bool enableOnStartTrigger = false;
         public static bool enableOnPauseTrigger = false;
         public static bool spreadsheetGenRequestFlag = false;
         public static List<PlanetData> planetsToLoad = new List<PlanetData> { };
         public static Dictionary<int, string> planetResourceData = new Dictionary<int, string>();
         public static bool checkForPlanetsToUnload = false;
-        public static string spreadsheetFileNameTemplate = "default.csv";
-        public static string spreadsheetColumnSeparator = ",";
+        public static BepInEx.Configuration.ConfigEntry<string> spreadsheetFileNameTemplate;
+        public static BepInEx.Configuration.ConfigEntry<string> spreadsheetColumnSeparator;
         public static CultureInfo spreadsheetLocale = CultureInfo.CurrentUICulture;
-        public static int spreadsheetFloatPrecision = -1;
+        public static BepInEx.Configuration.ConfigEntry<int> spreadsheetFloatPrecision;
         new internal static ManualLogSource Logger;
         new internal static BepInEx.Configuration.ConfigFile Config;
         public static readonly int[] gases = { 1120, 1121, 1011 };
@@ -54,24 +55,24 @@ namespace StarSectorResourceSpreadsheetGenerator
         
         public class ConfigExtraFlags
         {
-            public static bool starAge = false;
-            public static bool starColor = false;
-            public static bool starLifetime = false;
-            public static bool starMass = false;
-            public static bool starRadius = false;
-            public static bool starTemperature = false;
-            public static bool distanceFromStarClusterCenter = false;
-            public static bool planetOrbitalPeriod = false;
-            public static bool planetOrbitAround = false;
-            public static bool planetOrbitAroundPlanet = false;
-            public static bool planetOrbitInclination = false;
-            public static bool planetOrbitLongitude = false;
-            public static bool planetOrbitPhase = false;
-            public static bool planetOrbitRadius = false;
-            public static bool planetRealRadius = false;
-            public static bool planetRotationPeriod = false;
-            public static bool planetRotationPhase = false;
-            public static bool planetSunDistance = false;
+            public static BepInEx.Configuration.ConfigEntry<bool> starAge;
+            public static BepInEx.Configuration.ConfigEntry<bool> starColor;
+            public static BepInEx.Configuration.ConfigEntry<bool> starLifetime;
+            public static BepInEx.Configuration.ConfigEntry<bool> starMass;
+            public static BepInEx.Configuration.ConfigEntry<bool> starRadius;
+            public static BepInEx.Configuration.ConfigEntry<bool> starTemperature;
+            public static BepInEx.Configuration.ConfigEntry<bool> distanceFromStarClusterCenter;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetOrbitalPeriod;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetOrbitAround;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetOrbitAroundPlanet;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetOrbitInclination;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetOrbitLongitude;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetOrbitPhase;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetOrbitRadius;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetRealRadius;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetRotationPeriod;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetRotationPhase;
+            public static BepInEx.Configuration.ConfigEntry<bool> planetSunDistance;
         }
 
         private static Thread veinGenerationThread;
@@ -84,35 +85,37 @@ namespace StarSectorResourceSpreadsheetGenerator
             SpreadsheetGenMod.Config = base.Config;
 
             // Determine the default spreadsheet path and configured spreadsheet path.
-            spreadsheetFileNameTemplate = "DSP_Star_Sector_Resources_${seed}-${starCount}.csv";
+            string spreadsheetFileNameDefault = "DSP_Star_Sector_Resources_${seed}-${starCount}.csv";
             if (Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) != "")
             {
-                spreadsheetFileNameTemplate = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + spreadsheetFileNameTemplate;
+                spreadsheetFileNameDefault = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + spreadsheetFileNameDefault;
             }
-            spreadsheetFileNameTemplate = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileNameTemplate, "Path to the output spreadsheet.  You can use ${seed} and ${starCount} as placeholders and the mod will insert them into the filename.").Value;
-            spreadsheetColumnSeparator = Config.Bind<string>("Output", "SpreadsheetColumnSeparator", spreadsheetColumnSeparator, "Character to use as Separator in the generated file.").Value;
-            spreadsheetFloatPrecision = Config.Bind<int>("Output", "SpreadsheetFloatPrecision", spreadsheetFloatPrecision, "Decimals to use when exporting floating point numbers. Use -1 to disable rounding.").Value;
+            spreadsheetFileNameTemplate = Config.Bind<string>("Output", "SpreadsheetFileName", spreadsheetFileNameDefault, "Path to the output spreadsheet.  You can use ${seed} and ${starCount} as placeholders and the mod will insert them into the filename.");
+            spreadsheetColumnSeparator = Config.Bind<string>("Output", "SpreadsheetColumnSeparator", ",", "Character to use as Separator in the generated file.");
+            spreadsheetFloatPrecision = Config.Bind<int>("Output", "SpreadsheetFloatPrecision", -1, "Decimals to use when exporting floating point numbers. Use -1 to disable rounding.");
             spreadsheetLocale = new CultureInfo(Config.Bind<string>("Output", "SpreadsheetLocale", spreadsheetLocale.Name, "Locale to use for exporting numbers.").Value, false);
-            enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", enablePlanetLoadingFlag, "Planet loading is needed to get all resource data, but you can skip this step if you want results fast.").Value;
+            enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", true, "Planet loading is needed to get all resource data, but you can skip this step if you want results fast.");
 
-            ConfigExtraFlags.starAge = Config.Bind<bool>("ExtraData", "StarAge", ConfigExtraFlags.starAge, "Add stars' age to the spreadsheet").Value;
-            ConfigExtraFlags.starColor = Config.Bind<bool>("ExtraData", "StarColor", ConfigExtraFlags.starColor, "Add stars' color to the spreadsheet").Value;
-            ConfigExtraFlags.starLifetime = Config.Bind<bool>("ExtraData", "StarLifetime", ConfigExtraFlags.starLifetime, "Add stars' lifetime to the spreadsheet").Value;
-            ConfigExtraFlags.starMass = Config.Bind<bool>("ExtraData", "StarMass", ConfigExtraFlags.starMass, "Add stars' mass to the spreadsheet").Value;
-            ConfigExtraFlags.starRadius = Config.Bind<bool>("ExtraData", "StarRadius", ConfigExtraFlags.starRadius, "Add stars' radius to the spreadsheet").Value;
-            ConfigExtraFlags.starTemperature = Config.Bind<bool>("ExtraData", "StarTemperature", ConfigExtraFlags.starTemperature, "Add stars' temperature to the spreadsheet").Value;
-            ConfigExtraFlags.distanceFromStarClusterCenter = Config.Bind<bool>("ExtraData", "DistanceFromStarClusterCenter", ConfigExtraFlags.distanceFromStarClusterCenter, "Add star's distance from the center of the star cluster.  This is typically the location of the initial planet's star.").Value;
-            ConfigExtraFlags.planetOrbitalPeriod = Config.Bind<bool>("ExtraData", "PlanetOrbitalPeriod", ConfigExtraFlags.planetOrbitalPeriod, "Add planets' orbital period to the spreadsheet").Value;
-            ConfigExtraFlags.planetOrbitAround = Config.Bind<bool>("ExtraData", "PlanetOrbitAround", ConfigExtraFlags.planetOrbitAround, "Add type of orbital relationship to the spreadsheet").Value;
-            ConfigExtraFlags.planetOrbitAroundPlanet = Config.Bind<bool>("ExtraData", "PlanetOrbitAroundPlanet", ConfigExtraFlags.planetOrbitAroundPlanet, "Add name of planet the planets orbit, if they orbit a planet, to the spreadsheet").Value;
-            ConfigExtraFlags.planetOrbitInclination = Config.Bind<bool>("ExtraData", "PlanetOrbitInclination", ConfigExtraFlags.planetOrbitInclination, "Add planets' orbit inclination to the spreadsheet").Value;
-            ConfigExtraFlags.planetOrbitLongitude = Config.Bind<bool>("ExtraData", "PlanetOrbitLongitude", ConfigExtraFlags.planetOrbitLongitude, "Add planets' orbit longitude to the spreadsheet").Value;
-            ConfigExtraFlags.planetOrbitPhase = Config.Bind<bool>("ExtraData", "PlanetOrbitPhase", ConfigExtraFlags.planetOrbitPhase, "Add planets' orbit phase to the spreadsheet").Value;
-            ConfigExtraFlags.planetOrbitRadius = Config.Bind<bool>("ExtraData", "PlanetOrbitRadius", ConfigExtraFlags.planetOrbitRadius, "Add planets' orbit radius to the spreadsheet").Value;
-            ConfigExtraFlags.planetRealRadius = Config.Bind<bool>("ExtraData", "PlanetRealRadius", ConfigExtraFlags.planetRealRadius, "Add planets' real radius to the spreadsheet").Value;
-            ConfigExtraFlags.planetRotationPeriod = Config.Bind<bool>("ExtraData", "PlanetRotationPeriod", ConfigExtraFlags.planetRotationPeriod, "Add planets' rotation period to the spreadsheet").Value;
-            ConfigExtraFlags.planetRotationPhase = Config.Bind<bool>("ExtraData", "PlanetRotationPhase", ConfigExtraFlags.planetRotationPhase, "Add planets' rotation phase to the spreadsheet").Value;
-            ConfigExtraFlags.planetSunDistance = Config.Bind<bool>("ExtraData", "PlanetSunDistance", ConfigExtraFlags.planetSunDistance, "Add planets' distance from their star to the spreadsheet").Value;
+            ConfigExtraFlags.starAge = Config.Bind<bool>("ExtraData", "StarAge", false, "Add stars' age to the spreadsheet");
+            ConfigExtraFlags.starColor = Config.Bind<bool>("ExtraData", "StarColor", false, "Add stars' color to the spreadsheet");
+            ConfigExtraFlags.starLifetime = Config.Bind<bool>("ExtraData", "StarLifetime", false, "Add stars' lifetime to the spreadsheet");
+            ConfigExtraFlags.starMass = Config.Bind<bool>("ExtraData", "StarMass", false, "Add stars' mass to the spreadsheet");
+            ConfigExtraFlags.starRadius = Config.Bind<bool>("ExtraData", "StarRadius", false, "Add stars' radius to the spreadsheet");
+            ConfigExtraFlags.starTemperature = Config.Bind<bool>("ExtraData", "StarTemperature", false, "Add stars' temperature to the spreadsheet");
+            ConfigExtraFlags.distanceFromStarClusterCenter = Config.Bind<bool>("ExtraData", "DistanceFromStarClusterCenter", false, "Add star's distance from the center of the star cluster.  This is typically the location of the initial planet's star.");
+            ConfigExtraFlags.planetOrbitalPeriod = Config.Bind<bool>("ExtraData", "PlanetOrbitalPeriod", false, "Add planets' orbital period to the spreadsheet");
+            ConfigExtraFlags.planetOrbitAround = Config.Bind<bool>("ExtraData", "PlanetOrbitAround", false, "Add type of orbital relationship to the spreadsheet");
+            ConfigExtraFlags.planetOrbitAroundPlanet = Config.Bind<bool>("ExtraData", "PlanetOrbitAroundPlanet", false, "Add name of planet the planets orbit, if they orbit a planet, to the spreadsheet");
+            ConfigExtraFlags.planetOrbitInclination = Config.Bind<bool>("ExtraData", "PlanetOrbitInclination", false, "Add planets' orbit inclination to the spreadsheet");
+            ConfigExtraFlags.planetOrbitLongitude = Config.Bind<bool>("ExtraData", "PlanetOrbitLongitude", false, "Add planets' orbit longitude to the spreadsheet");
+            ConfigExtraFlags.planetOrbitPhase = Config.Bind<bool>("ExtraData", "PlanetOrbitPhase", false, "Add planets' orbit phase to the spreadsheet");
+            ConfigExtraFlags.planetOrbitRadius = Config.Bind<bool>("ExtraData", "PlanetOrbitRadius", false, "Add planets' orbit radius to the spreadsheet");
+            ConfigExtraFlags.planetRealRadius = Config.Bind<bool>("ExtraData", "PlanetRealRadius", false, "Add planets' real radius to the spreadsheet");
+            ConfigExtraFlags.planetRotationPeriod = Config.Bind<bool>("ExtraData", "PlanetRotationPeriod", false, "Add planets' rotation period to the spreadsheet");
+            ConfigExtraFlags.planetRotationPhase = Config.Bind<bool>("ExtraData", "PlanetRotationPhase", false, "Add planets' rotation phase to the spreadsheet");
+            ConfigExtraFlags.planetSunDistance = Config.Bind<bool>("ExtraData", "PlanetSunDistance", false, "Add planets' distance from their star to the spreadsheet");
+
+            Config.SettingChanged += OnConfigSettingChanged;
 
             Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileNameTemplate + "\"");
 
@@ -124,6 +127,26 @@ namespace StarSectorResourceSpreadsheetGenerator
             veinGenerationThread.Start();
 
             Logger.LogInfo("Initialization complete.");
+        }
+
+        public static void OnConfigSettingChanged(object sender, BepInEx.Configuration.SettingChangedEventArgs e)
+        {
+            BepInEx.Configuration.ConfigDefinition changedSetting = e.ChangedSetting.Definition;
+            if (changedSetting.Section == "Output" && changedSetting.Key == "SpreadsheetFileName") { }
+            else if (changedSetting.Section == "Enable" && changedSetting.Key == "LoadAllPlanets") { }
+            else  // All other config changes result in wiping the available data...
+            {
+                Monitor.Enter(planetComputeThreadMutexLock);
+                spreadsheetGenRequestFlag = false;
+                planetsToLoad.Clear();
+                planetResourceData.Clear();
+                Monitor.Exit(planetComputeThreadMutexLock);
+
+                if (changedSetting.Section == "Output" && changedSetting.Key == "SpreadsheetLocale")
+                {
+                    spreadsheetLocale = new CultureInfo(Config.Bind<string>("Output", "SpreadsheetLocale", spreadsheetLocale.Name, "Locale to use for exporting numbers.").Value, false);
+                }
+            }
         }
 
         // Called to start spreadsheet generation.
@@ -175,7 +198,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 Logger.LogInfo("Planet resource data already available.  Proceeding with resource spreadsheet generation.");
                 GenerateResourceSpreadsheet();
             }
-            else if (!enablePlanetLoadingFlag)
+            else if (!enablePlanetLoadingFlag.Value)
             {
                 Logger.LogInfo("Skipping planet load.  Proceeding with resource spreadsheet generation.  Speadsheet will be incomplete.");
                 GenerateResourceSpreadsheet();
@@ -301,7 +324,7 @@ namespace StarSectorResourceSpreadsheetGenerator
         [HarmonyPrefix, HarmonyPatch(typeof(PlanetData), "NotifyLoaded")]
         public static void PlanetData_NotifyLoaded_Prefix()
         {
-            Logger.LogInfo("Planet loaded.");
+            Logger.LogDebug("Planet loaded.");
         }
 
         // Called when all planets are loaded.  Saves resource spreadsheet.
@@ -312,47 +335,47 @@ namespace StarSectorResourceSpreadsheetGenerator
                 Logger.LogInfo("Begin resource spreadsheet generation...");
 
                 var sb = new StringBuilder(8192);
-                sb.Append("Planet Name").Append(spreadsheetColumnSeparator);
-                sb.Append("Star Name").Append(spreadsheetColumnSeparator);
-                sb.Append("Star Dyson Luminosity").Append(spreadsheetColumnSeparator);
-                sb.Append("Star Type").Append(spreadsheetColumnSeparator);
-                sb.Append("Star Position X").Append(spreadsheetColumnSeparator);
-                sb.Append("Star Position Y").Append(spreadsheetColumnSeparator);
-                sb.Append("Star Position Z").Append(spreadsheetColumnSeparator);
+                sb.Append("Planet Name").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Star Name").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Star Dyson Luminosity").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Star Type").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Star Position X").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Star Position Y").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Star Position Z").Append(spreadsheetColumnSeparator.Value);
 
-                if (ConfigExtraFlags.starAge) { sb.Append("Star Age").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.starColor) { sb.Append("Star Color").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.starLifetime) { sb.Append("Star Lifetime").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.starMass) { sb.Append("Star Mass").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.starRadius) { sb.Append("Star Radius").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.starTemperature) { sb.Append("Star Temperature").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.distanceFromStarClusterCenter) { sb.Append("Distance from Cluster Center").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetOrbitalPeriod) { sb.Append("Orbital Period").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetOrbitAround) { sb.Append("Planet/Moon").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetOrbitAroundPlanet) { sb.Append("Orbiting").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetOrbitInclination) { sb.Append("Orbit Inclination").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetOrbitLongitude) { sb.Append("Orbit Longitude").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetOrbitPhase) { sb.Append("Orbit Phase").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetOrbitRadius) { sb.Append("Orbit Radius").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetRealRadius) { sb.Append("Real Radius").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetRotationPeriod) { sb.Append("Rotation Period").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetRotationPhase) { sb.Append("Rotation Phase").Append(spreadsheetColumnSeparator); }
-                if (ConfigExtraFlags.planetSunDistance) { sb.Append("Distance from Star").Append(spreadsheetColumnSeparator); }
+                if (ConfigExtraFlags.starAge.Value) { sb.Append("Star Age").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.starColor.Value) { sb.Append("Star Color").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.starLifetime.Value) { sb.Append("Star Lifetime").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.starMass.Value) { sb.Append("Star Mass").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.starRadius.Value) { sb.Append("Star Radius").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.starTemperature.Value) { sb.Append("Star Temperature").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.distanceFromStarClusterCenter.Value) { sb.Append("Distance from Cluster Center").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetOrbitalPeriod.Value) { sb.Append("Orbital Period").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetOrbitAround.Value) { sb.Append("Planet/Moon").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetOrbitAroundPlanet.Value) { sb.Append("Orbiting").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetOrbitInclination.Value) { sb.Append("Orbit Inclination").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetOrbitLongitude.Value) { sb.Append("Orbit Longitude").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetOrbitPhase.Value) { sb.Append("Orbit Phase").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetOrbitRadius.Value) { sb.Append("Orbit Radius").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetRealRadius.Value) { sb.Append("Real Radius").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetRotationPeriod.Value) { sb.Append("Rotation Period").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetRotationPhase.Value) { sb.Append("Rotation Phase").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.planetSunDistance.Value) { sb.Append("Distance from Star").Append(spreadsheetColumnSeparator.Value); }
 
-                sb.Append("Wind Strength").Append(spreadsheetColumnSeparator);
-                sb.Append("Luminosity on Planet").Append(spreadsheetColumnSeparator);
-                sb.Append("Planet Type").Append(spreadsheetColumnSeparator);
-                sb.Append("Land Percent").Append(spreadsheetColumnSeparator);
-                sb.Append("Singularity").Append(spreadsheetColumnSeparator);
-                sb.Append("Ocean").Append(spreadsheetColumnSeparator);
+                sb.Append("Wind Strength").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Luminosity on Planet").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Planet Type").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Land Percent").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Singularity").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Ocean").Append(spreadsheetColumnSeparator.Value);
 
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
-                    sb.Append(item.name).Append(spreadsheetColumnSeparator);
+                    sb.Append(item.name).Append(spreadsheetColumnSeparator.Value);
                 }
                 foreach (int item in gases)
                 {
-                    sb.Append(LDB.items.Select(item).name).Append(spreadsheetColumnSeparator);
+                    sb.Append(LDB.items.Select(item).name).Append(spreadsheetColumnSeparator.Value);
                 }
                 sb.Append(Environment.NewLine);
 
@@ -372,7 +395,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                 }
                 // insert values for possible placeholders in filename
-                String spreadsheetFileName = spreadsheetFileNameTemplate;
+                String spreadsheetFileName = spreadsheetFileNameTemplate.Value;
                 spreadsheetFileName = spreadsheetFileName.Replace("${seed}", GameMain.galaxy.seed.ToString("D8"));  // D8 will prefix the integer with zeros to make it always 8 characters long.
                 spreadsheetFileName = spreadsheetFileName.Replace("${starCount}", GameMain.galaxy.starCount.ToString());
 
@@ -430,72 +453,72 @@ namespace StarSectorResourceSpreadsheetGenerator
         {
             StarData star = planet.star;
             string floatFormat = "";
-            if (spreadsheetFloatPrecision >= 0)
+            if (spreadsheetFloatPrecision.Value >= 0)
             {
                 floatFormat = "F" + spreadsheetFloatPrecision.ToString();
             }
 
             sb.Length = 0;
-            sb.Append(planet.displayName).Append(spreadsheetColumnSeparator);
-            sb.Append(star.displayName).Append(spreadsheetColumnSeparator);
-            sb.Append(star.dysonLumino.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
-            sb.Append(star.typeString).Append(spreadsheetColumnSeparator);
-            sb.Append(star.position.x.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
-            sb.Append(star.position.y.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
-            sb.Append(star.position.z.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+            sb.Append(planet.displayName).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(star.displayName).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(star.dysonLumino.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(star.typeString).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(star.position.x.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(star.position.y.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(star.position.z.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
 
-            if (ConfigExtraFlags.starAge) { sb.Append(star.age.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.starColor) { sb.Append(star.color.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.starLifetime) { sb.Append(star.lifetime.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.starMass) { sb.Append(star.mass.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.starRadius) { sb.Append(star.radius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.starTemperature) { sb.Append(star.temperature.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.distanceFromStarClusterCenter) { sb.Append(Vector3.Distance(star.position, new Vector3(0,0,0)).ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetOrbitalPeriod) { sb.Append(planet.orbitalPeriod.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetOrbitAround) { sb.Append(planet.orbitAround).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetOrbitAroundPlanet)
+            if (ConfigExtraFlags.starAge.Value) { sb.Append(star.age.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.starColor.Value) { sb.Append(star.color.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.starLifetime.Value) { sb.Append(star.lifetime.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.starMass.Value) { sb.Append(star.mass.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.starRadius.Value) { sb.Append(star.radius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.starTemperature.Value) { sb.Append(star.temperature.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.distanceFromStarClusterCenter.Value) { sb.Append(Vector3.Distance(star.position, new Vector3(0,0,0)).ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetOrbitalPeriod.Value) { sb.Append(planet.orbitalPeriod.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetOrbitAround.Value) { sb.Append(planet.orbitAround).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetOrbitAroundPlanet.Value)
             {
                 if (planet.orbitAroundPlanet == null)
                 {
-                    sb.Append(spreadsheetColumnSeparator);
+                    sb.Append(spreadsheetColumnSeparator.Value);
                 }
                 else
                 {
-                    sb.Append(planet.orbitAroundPlanet.displayName).Append(spreadsheetColumnSeparator);
+                    sb.Append(planet.orbitAroundPlanet.displayName).Append(spreadsheetColumnSeparator.Value);
                 }
             }
-            if (ConfigExtraFlags.planetOrbitInclination) { sb.Append(planet.orbitInclination.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetOrbitLongitude) { sb.Append(planet.orbitLongitude.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetOrbitPhase) { sb.Append(planet.orbitPhase.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetOrbitRadius) { sb.Append(planet.orbitRadius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetRealRadius) { sb.Append(planet.realRadius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetRotationPeriod) { sb.Append(planet.rotationPeriod.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetRotationPhase) { sb.Append(planet.rotationPhase.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
-            if (ConfigExtraFlags.planetSunDistance) { sb.Append(planet.sunDistance.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator); }
+            if (ConfigExtraFlags.planetOrbitInclination.Value) { sb.Append(planet.orbitInclination.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetOrbitLongitude.Value) { sb.Append(planet.orbitLongitude.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetOrbitPhase.Value) { sb.Append(planet.orbitPhase.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetOrbitRadius.Value) { sb.Append(planet.orbitRadius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetRealRadius.Value) { sb.Append(planet.realRadius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetRotationPeriod.Value) { sb.Append(planet.rotationPeriod.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetRotationPhase.Value) { sb.Append(planet.rotationPhase.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetSunDistance.Value) { sb.Append(planet.sunDistance.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
 
-            sb.Append(planet.windStrength.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
-            sb.Append(planet.luminosity.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
-            sb.Append(planet.typeString).Append(spreadsheetColumnSeparator);
-            sb.Append(planet.landPercent.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
-            sb.Append("\"" + planet.singularity + "\"").Append(spreadsheetColumnSeparator);  // planet.singularity can contain commas, so it must be quoted.
+            sb.Append(planet.windStrength.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(planet.luminosity.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(planet.typeString).Append(spreadsheetColumnSeparator.Value);
+            sb.Append(planet.landPercent.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+            sb.Append("\"" + planet.singularity + "\"").Append(spreadsheetColumnSeparator.Value);  // planet.singularity can contain commas, so it must be quoted.
 
             if (planet.type == EPlanetType.Gas)
             {
-                sb.Append("None").Append(spreadsheetColumnSeparator);  // Ocean
+                sb.Append("None").Append(spreadsheetColumnSeparator.Value);  // Ocean
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
-                    sb.Append("0").Append(spreadsheetColumnSeparator);
+                    sb.Append("0").Append(spreadsheetColumnSeparator.Value);
                 }
                 foreach (int item in gases)
                 {
                     int index = Array.IndexOf(planet.gasItems, item);
                     if (index == -1)
                     {
-                        sb.Append("0").Append(spreadsheetColumnSeparator);
+                        sb.Append("0").Append(spreadsheetColumnSeparator.Value);
                     }
                     else
                     {
-                        sb.Append(planet.gasSpeeds[index].ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+                        sb.Append(planet.gasSpeeds[index].ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
                     }
                 }
             }
@@ -503,23 +526,23 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 if (planet.waterItemId == 0)
                 {
-                    sb.Append("None").Append(spreadsheetColumnSeparator);
+                    sb.Append("None").Append(spreadsheetColumnSeparator.Value);
                 }
                 else if (planet.waterItemId == -1)
                 {
-                    sb.Append("Lava").Append(spreadsheetColumnSeparator);
+                    sb.Append("Lava").Append(spreadsheetColumnSeparator.Value);
                 }
                 else
                 {
                     ItemProto waterItem = LDB.items.Select(planet.waterItemId);
-                    sb.Append(waterItem.name).Append(spreadsheetColumnSeparator);
+                    sb.Append(waterItem.name).Append(spreadsheetColumnSeparator.Value);
                 }
 
                 if (planet.veinGroups.Length == 0)
                 {
                     foreach (VeinProto item in LDB.veins.dataArray)
                     {
-                        sb.Append("Unloaded").Append(spreadsheetColumnSeparator);
+                        sb.Append("Unloaded").Append(spreadsheetColumnSeparator.Value);
                     }
                 }
                 else
@@ -530,18 +553,18 @@ namespace StarSectorResourceSpreadsheetGenerator
                         long amount = planet.veinAmounts[(int)type];
                         if (type == EVeinType.Oil)
                         {
-                            sb.Append(((double)amount * VeinData.oilSpeedMultiplier).ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+                            sb.Append(((double)amount * VeinData.oilSpeedMultiplier).ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
                         }
                         else
                         {
-                            sb.Append(amount.ToString(spreadsheetLocale)).Append(spreadsheetColumnSeparator);
+                            sb.Append(amount.ToString(spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
                         }
                         type++;
                     }
                 }
                 foreach (int item in gases)
                 {
-                    sb.Append("0").Append(spreadsheetColumnSeparator);
+                    sb.Append("0").Append(spreadsheetColumnSeparator.Value);
                 }
             }
 
