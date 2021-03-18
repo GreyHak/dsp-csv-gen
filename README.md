@@ -52,6 +52,7 @@ The generated spreadsheet will contain columns for the following data.
    - _ Optical grating crystal quantity
    - _ Spiniform stalagmite crystal quantity
    - _ Unipolar magnet quantity
+   - _ Number of veins for each resource can be configurable enabled
  - Gas Planet Resource
    - _ Hydrogen rate
    - _ Deuterium rate
@@ -162,6 +163,11 @@ The source code for this mod is available for download, review and forking on Gi
 在BSD3条例许可下，本mod的源代码可供在[GitHub](https://github.com/GreyHak/dsp-csv-gen)下载、查看、克隆。
 
 ## Change Log
+### v3.1.2
+ - Fixed an error which wasn't outputting the available information when configured not to load planets.
+ - Added new optional output for the number of veins of each resource on a planet.
+ - Fixed a graphical glitch if config changes were made in game while spreadsheet generation was in progress.
+ - Minor code cleanup for efficiency.
 ### v3.1.1
  - Minor bug fix in log entry of filename.
 ### v3.1.0

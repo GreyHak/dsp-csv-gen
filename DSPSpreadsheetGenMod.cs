@@ -35,24 +35,22 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "3.1.1";
+        public const string pluginVersion = "3.1.2";
 
-        public static BepInEx.Configuration.ConfigEntry<bool> enablePlanetLoadingFlag;
-        public static bool enableOnStartTrigger = false;
-        public static bool enableOnPauseTrigger = false;
         public static bool spreadsheetGenRequestFlag = false;
         public static List<PlanetData> planetsToLoad = new List<PlanetData> { };
         public static Dictionary<int, string> planetResourceData = new Dictionary<int, string>();
         public static bool checkForPlanetsToUnload = false;
-        public static BepInEx.Configuration.ConfigEntry<string> spreadsheetFileNameTemplate;
-        public static BepInEx.Configuration.ConfigEntry<string> spreadsheetColumnSeparator;
         public static CultureInfo spreadsheetLocale = CultureInfo.CurrentUICulture;
-        public static BepInEx.Configuration.ConfigEntry<int> spreadsheetFloatPrecision;
         new internal static ManualLogSource Logger;
         new internal static BepInEx.Configuration.ConfigFile Config;
         public static readonly int[] gases = { 1120, 1121, 1011 };
         public static int planetCount = 0;
-        
+
+        public static BepInEx.Configuration.ConfigEntry<bool> enablePlanetLoadingFlag;
+        public static BepInEx.Configuration.ConfigEntry<string> spreadsheetFileNameTemplate;
+        public static BepInEx.Configuration.ConfigEntry<string> spreadsheetColumnSeparator;
+        public static BepInEx.Configuration.ConfigEntry<int> spreadsheetFloatPrecision;
         public class ConfigExtraFlags
         {
             public static BepInEx.Configuration.ConfigEntry<bool> starAge;
@@ -73,6 +71,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             public static BepInEx.Configuration.ConfigEntry<bool> planetRotationPeriod;
             public static BepInEx.Configuration.ConfigEntry<bool> planetRotationPhase;
             public static BepInEx.Configuration.ConfigEntry<bool> planetSunDistance;
+            public static BepInEx.Configuration.ConfigEntry<bool> veinCounts;
         }
 
         private static Thread veinGenerationThread;
@@ -114,6 +113,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             ConfigExtraFlags.planetRotationPeriod = Config.Bind<bool>("ExtraData", "PlanetRotationPeriod", false, "Add planets' rotation period to the spreadsheet");
             ConfigExtraFlags.planetRotationPhase = Config.Bind<bool>("ExtraData", "PlanetRotationPhase", false, "Add planets' rotation phase to the spreadsheet");
             ConfigExtraFlags.planetSunDistance = Config.Bind<bool>("ExtraData", "PlanetSunDistance", false, "Add planets' distance from their star to the spreadsheet");
+            ConfigExtraFlags.veinCounts = Config.Bind<bool>("ExtraData", "VeinCounts", false, "Add the number of veins for each vein resource in addition to the total number of items.");
 
             Config.SettingChanged += OnConfigSettingChanged;
 
@@ -140,6 +140,10 @@ namespace StarSectorResourceSpreadsheetGenerator
                 spreadsheetGenRequestFlag = false;
                 planetsToLoad.Clear();
                 planetResourceData.Clear();
+                if (progressImage != null)
+                {
+                    progressImage.fillAmount = 0;
+                }
                 Monitor.Exit(planetComputeThreadMutexLock);
 
                 if (changedSetting.Section == "Output" && changedSetting.Key == "SpreadsheetLocale")
@@ -177,7 +181,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 foreach (PlanetData planet in star.planets)
                 {
-                    if (!planetResourceData.ContainsKey(planet.id) && (planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0))
+                    if (enablePlanetLoadingFlag.Value && (planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0) && !planetResourceData.ContainsKey(planet.id))
                     {
                         planetsToLoad.Add(planet);
 
@@ -369,9 +373,19 @@ namespace StarSectorResourceSpreadsheetGenerator
                 sb.Append("Singularity").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Ocean").Append(spreadsheetColumnSeparator.Value);
 
+                EVeinType type = (EVeinType)1;
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
-                    sb.Append(item.name).Append(spreadsheetColumnSeparator.Value);
+                    if (type == EVeinType.Oil || !ConfigExtraFlags.veinCounts.Value)
+                    {
+                        sb.Append(item.name).Append(spreadsheetColumnSeparator.Value);
+                    }
+                    else
+                    {
+                        sb.Append(item.name + " (items)").Append(spreadsheetColumnSeparator.Value);
+                        sb.Append(item.name + " (veins)").Append(spreadsheetColumnSeparator.Value);
+                    }
+                    type++;
                 }
                 foreach (int item in gases)
                 {
@@ -505,9 +519,15 @@ namespace StarSectorResourceSpreadsheetGenerator
             if (planet.type == EPlanetType.Gas)
             {
                 sb.Append("None").Append(spreadsheetColumnSeparator.Value);  // Ocean
+                EVeinType type = (EVeinType)1;
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
                     sb.Append("0").Append(spreadsheetColumnSeparator.Value);
+                    if (type != EVeinType.Oil && ConfigExtraFlags.veinCounts.Value)
+                    {
+                        sb.Append("0").Append(spreadsheetColumnSeparator.Value);
+                    }
+                    type++;
                 }
                 foreach (int item in gases)
                 {
@@ -540,9 +560,15 @@ namespace StarSectorResourceSpreadsheetGenerator
 
                 if (planet.veinGroups.Length == 0)
                 {
+                    EVeinType type = (EVeinType)1;
                     foreach (VeinProto item in LDB.veins.dataArray)
                     {
                         sb.Append("Unloaded").Append(spreadsheetColumnSeparator.Value);
+                        if (type != EVeinType.Oil && ConfigExtraFlags.veinCounts.Value)
+                        {
+                            sb.Append("Unloaded").Append(spreadsheetColumnSeparator.Value);
+                        }
+                        type++;
                     }
                 }
                 else
@@ -558,6 +584,20 @@ namespace StarSectorResourceSpreadsheetGenerator
                         else
                         {
                             sb.Append(amount.ToString(spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+
+                            if (ConfigExtraFlags.veinCounts.Value)
+                            {
+                                long numVeins = 0;
+                                foreach (PlanetData.VeinGroup veinGroup in planet.veinGroups)
+                                {
+                                    if (veinGroup.type == type)
+                                    {
+                                        numVeins += veinGroup.count;
+                                    }
+                                }
+
+                                sb.Append(numVeins.ToString(spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+                            }
                         }
                         type++;
                     }
@@ -597,7 +637,7 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             if (GameMain.instance != null && GameObject.Find("Game Menu/button-1-bg"))
             {
-                if (GameObject.Find("greyhak-csv-trigger-button"))
+                if (progressImage != null)
                 {
                     progressImage.fillAmount = 0;
                 }
@@ -638,20 +678,6 @@ namespace StarSectorResourceSpreadsheetGenerator
                     progressImage.sprite = GameObject.Instantiate<Sprite>(sprite);
                     Logger.LogInfo("Button load complete");
                 }
-            }
-
-            if (enableOnStartTrigger)
-            {
-                QueuePlanetLoading();
-            }
-        }
-
-        [HarmonyPrefix, HarmonyPatch(typeof(GameMain), "Pause")]
-        public static void GameMain_Pause_Prefix()
-        {
-            if (enableOnPauseTrigger)
-            {
-                QueuePlanetLoading();
             }
         }
 
