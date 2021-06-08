@@ -35,7 +35,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "3.1.2";
+        public const string pluginVersion = "3.1.3";
 
         public static bool spreadsheetGenRequestFlag = false;
         public static List<PlanetData> planetsToLoad = new List<PlanetData> { };
@@ -552,10 +552,21 @@ namespace StarSectorResourceSpreadsheetGenerator
                 {
                     sb.Append("Lava").Append(spreadsheetColumnSeparator.Value);
                 }
+                else if (planet.waterItemId == -2)
+                {
+                    sb.Append("??? Please let me know what ocean type is on this planet with a comment on https://github.com/GreyHak/dsp-csv-gen/issues/20.  Thank you.").Append(spreadsheetColumnSeparator.Value);
+                }
                 else
                 {
-                    ItemProto waterItem = LDB.items.Select(planet.waterItemId);
-                    sb.Append(waterItem.name).Append(spreadsheetColumnSeparator.Value);
+                    try
+                    {
+                        ItemProto waterItem = LDB.items.Select(planet.waterItemId);  // If this fails, it throws an exception which will hang the spreadsheet generation if not caught.
+                        sb.Append(waterItem.name).Append(spreadsheetColumnSeparator.Value);
+                    }
+                    catch
+                    {
+                        sb.Append($"UNKNOWN ocean type {planet.waterItemId}.  Please write a ticket at https://github.com/GreyHak/dsp-csv-gen/issues.  Thank you.").Append(spreadsheetColumnSeparator.Value);
+                    }
                 }
 
                 if (planet.veinGroups.Length == 0)
