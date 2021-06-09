@@ -163,8 +163,10 @@ The source code for this mod is available for download, review and forking on Gi
 在BSD3条例许可下，本mod的源代码可供在[GitHub](https://github.com/GreyHak/dsp-csv-gen)下载、查看、克隆。
 
 ## Change Log
+### v3.1.4
+ - New ocean type from v3.1.3 now identified as Ice.  Thanks to [Posi](https://github.com/posi74de) for the report and the information.
 ### v3.1.3 (Beta)
- - This update fixes a hanging bug caused by a recent Dyson Sphere Program update.  I need your help.  There's a new ocean type generated on new planets, but I don't have a new game in which my Icarus is capable of flying to the new planet to determine the ocean type.  If you run this version, a placeholder will be added to your spreadsheet.  If you can go to one of the planets with the placeholder ocean and determine the ocean type, please let me know at [https://github.com/GreyHak/dsp-csv-gen/issues/20](https://github.com/GreyHak/dsp-csv-gen/issues/20).  Thank you.
+ - This update fixes a hanging bug caused by a recent Dyson Sphere Program update.
 ### v3.1.2
  - Fixed an error which wasn't outputting the available information when configured not to load planets.
  - Added new optional output for the number of veins of each resource on a planet.

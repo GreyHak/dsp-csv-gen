@@ -35,7 +35,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "3.1.3";
+        public const string pluginVersion = "3.1.4";
 
         public static bool spreadsheetGenRequestFlag = false;
         public static List<PlanetData> planetsToLoad = new List<PlanetData> { };
@@ -554,7 +554,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 else if (planet.waterItemId == -2)
                 {
-                    sb.Append("??? Please let me know what ocean type is on this planet with a comment on https://github.com/GreyHak/dsp-csv-gen/issues/20.  Thank you.").Append(spreadsheetColumnSeparator.Value);
+                    sb.Append("Ice").Append(spreadsheetColumnSeparator.Value);
                 }
                 else
                 {
