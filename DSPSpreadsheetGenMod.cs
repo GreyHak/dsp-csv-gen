@@ -349,8 +349,10 @@ namespace StarSectorResourceSpreadsheetGenerator
                 sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;6;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col F ==> Current target X
                 sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;7;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col G ==> Current target Y
                 sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;8;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col H ==> Current target Z
-                sb.Append(Environment.NewLine); currLineNum++;
-                sb.Append("!!! erase this and add data constraint to this cell so that it takes a value from cells A4 to A___HERE_TOTAL_LINE_NUMBER___ (all planet names)").Append(Environment.NewLine); currLineNum++;
+                sb.Append(Environment.NewLine);
+                currLineNum++;
+                sb.Append("!!! Replace this cell with any of the planet names from cells A4 to A___HERE_TOTAL_LINE_NUMBER___").Append(Environment.NewLine);
+                currLineNum++;
                 // column headers
                 sb.Append("Planet Name").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Name").Append(spreadsheetColumnSeparator.Value);
@@ -405,7 +407,8 @@ namespace StarSectorResourceSpreadsheetGenerator
                 {
                     sb.Append(LDB.items.Select(item).name).Append(spreadsheetColumnSeparator.Value);
                 }
-                sb.Append(Environment.NewLine); currLineNum++;
+                sb.Append(Environment.NewLine);
+                currLineNum++;
 
                 foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
                 {
@@ -413,12 +416,14 @@ namespace StarSectorResourceSpreadsheetGenerator
                     {
                         if (planetResourceData.ContainsKey(planet.id))
                         {
-                            sb.Append(planetResourceData[planet.id].Replace("___HERE_CURRENT_LINE_NUMBER___",currLineNum.ToString())); currLineNum++;
+                            sb.Append(planetResourceData[planet.id].Replace("___HERE_CURRENT_LINE_NUMBER___", currLineNum.ToString()));
+                            currLineNum++;
                         }
                         else
                         {
                             Logger.LogError("ERROR: Missing resource data for " + planet.displayName);
-                            sb.AppendFormat("{0}\n", planet.displayName); currLineNum++;
+                            sb.AppendFormat("{0}\n", planet.displayName);
+                            currLineNum++;
                         }
                     }
                 }
@@ -433,7 +438,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 file.Directory.Create(); // If the directory already exists, this method does nothing.
 
                 string content = sb.ToString();
-                content = content.Replace("___HERE_TOTAL_LINE_NUMBER___", currLineNum.ToString());
+                content = content.Replace("___HERE_TOTAL_LINE_NUMBER___", (currLineNum - 1).ToString());
                 File.WriteAllText(spreadsheetFileName, content);
 
                 Logger.LogInfo("Completed saving resource spreadsheet.");
