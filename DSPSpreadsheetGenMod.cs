@@ -22,6 +22,7 @@ using BepInEx.Logging;
 using System.Security;
 using System.Threading;
 using System.Security.Permissions;
+using System.ComponentModel;
 
 [module: UnverifiableCode]
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -51,6 +52,18 @@ namespace StarSectorResourceSpreadsheetGenerator
         public static BepInEx.Configuration.ConfigEntry<string> spreadsheetFileNameTemplate;
         public static BepInEx.Configuration.ConfigEntry<string> spreadsheetColumnSeparator;
         public static BepInEx.Configuration.ConfigEntry<int> spreadsheetFloatPrecision;
+
+        public enum DistanceFromTypeEnum
+        {
+            [Description("Disable will not include equations for calculating distance-from.")]
+            Disabled,
+            [Description("Excel will format the distance-from calculations for Microsoft Excel.")]
+            Excel,
+            [Description("Open Calc will format the distance-from calculations for OpenOffice Calc.")]
+            OpenCalc,
+        };
+        public static BepInEx.Configuration.ConfigEntry<DistanceFromTypeEnum> includeDistanceFromCalculations;
+
         public class ConfigExtraFlags
         {
             public static BepInEx.Configuration.ConfigEntry<bool> starAge;
@@ -93,6 +106,8 @@ namespace StarSectorResourceSpreadsheetGenerator
             spreadsheetColumnSeparator = Config.Bind<string>("Output", "SpreadsheetColumnSeparator", ",", "Character to use as Separator in the generated file.");
             spreadsheetFloatPrecision = Config.Bind<int>("Output", "SpreadsheetFloatPrecision", -1, "Decimals to use when exporting floating point numbers. Use -1 to disable rounding.");
             spreadsheetLocale = new CultureInfo(Config.Bind<string>("Output", "SpreadsheetLocale", spreadsheetLocale.Name, "Locale to use for exporting numbers.").Value, false);
+            includeDistanceFromCalculations = Config.Bind<DistanceFromTypeEnum>("Output", "DistanceFrom", DistanceFromTypeEnum.Disabled, "This feature provides the ability to choose any planet, and calculate the distance from that planet to all other planets. This feature supports Microsoft Excel and OpenOffice Calc.");
+
             enablePlanetLoadingFlag = Config.Bind<bool>("Enable", "LoadAllPlanets", true, "Planet loading is needed to get all resource data, but you can skip this step if you want results fast.");
 
             ConfigExtraFlags.starAge = Config.Bind<bool>("ExtraData", "StarAge", false, "Add stars' age to the spreadsheet");
@@ -341,24 +356,37 @@ namespace StarSectorResourceSpreadsheetGenerator
                 var sb = new StringBuilder(8192);
                 //"Distance to target" fields and computations
                 int currLineNum = 1;
-                sb.Append("Distance Target").Append(spreadsheetColumnSeparator.Value); // Col A
-                sb.Append(spreadsheetColumnSeparator.Value);// Col B
-                sb.Append(spreadsheetColumnSeparator.Value);// Col C
-                sb.Append(spreadsheetColumnSeparator.Value);// Col D
-                sb.Append(spreadsheetColumnSeparator.Value);// Col E
-                sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;6;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col F ==> Current target X
-                sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;7;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col G ==> Current target Y
-                sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;8;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col H ==> Current target Z
-                sb.Append(Environment.NewLine);
-                currLineNum++;
-                sb.Append("!!! Replace this cell with any of the planet names from cells A4 to A___HERE_TOTAL_LINE_NUMBER___").Append(Environment.NewLine);
-                currLineNum++;
+                if (includeDistanceFromCalculations.Value != DistanceFromTypeEnum.Disabled)
+                {
+                    sb.Append("Distance Target").Append(spreadsheetColumnSeparator.Value); // Col A
+                    sb.Append(spreadsheetColumnSeparator.Value);// Col B
+                    sb.Append(spreadsheetColumnSeparator.Value);// Col C
+                    sb.Append(spreadsheetColumnSeparator.Value);// Col D
+                    sb.Append(spreadsheetColumnSeparator.Value);// Col E
+                    if (includeDistanceFromCalculations.Value == DistanceFromTypeEnum.OpenCalc)
+                    {
+                        escapeAddValue(sb, "=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;6;FALSE)");// Col F ==> Current target X
+                        escapeAddValue(sb, "=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;7;FALSE)");// Col G ==> Current target Y
+                        escapeAddValue(sb, "=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;8;FALSE)");// Col H ==> Current target Z
+                    }
+                    else if (includeDistanceFromCalculations.Value == DistanceFromTypeEnum.Excel)
+                    {
+                        escapeAddValue(sb, "=VLOOKUP($A$2,$A$4:$H$___HERE_TOTAL_LINE_NUMBER___,6,FALSE)");// Col F ==> Current target X
+                        escapeAddValue(sb, "=VLOOKUP($A$2,$A$4:$H$___HERE_TOTAL_LINE_NUMBER___,7,FALSE)");// Col G ==> Current target Y
+                        escapeAddValue(sb, "=VLOOKUP($A$2,$A$4:$H$___HERE_TOTAL_LINE_NUMBER___,8,FALSE)");// Col H ==> Current target Z
+                    }
+                    sb.Append(Environment.NewLine);
+                    currLineNum++;
+                    sb.Append("!!! Replace this cell with any of the planet names from cells A4 to A___HERE_TOTAL_LINE_NUMBER___").Append(Environment.NewLine);
+                    currLineNum++;
+                }
                 // column headers
                 sb.Append("Planet Name").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Name").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Dyson Luminosity").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Type").Append(spreadsheetColumnSeparator.Value);
-                sb.Append("Distance to target").Append(spreadsheetColumnSeparator.Value);
+                if (includeDistanceFromCalculations.Value != DistanceFromTypeEnum.Disabled)
+                    sb.Append("Distance to target").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Position X").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Position Y").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Position Z").Append(spreadsheetColumnSeparator.Value);
@@ -498,7 +526,10 @@ namespace StarSectorResourceSpreadsheetGenerator
             escapeAddValue(sb, star.displayName);
             escapeAddValue(sb, star.dysonLumino.ToString(floatFormat, spreadsheetLocale));
             escapeAddValue(sb, star.typeString);
-            escapeAddValue(sb, "=SQRT(SUMXMY2($F$1:$H$1;F___HERE_CURRENT_LINE_NUMBER___:H___HERE_CURRENT_LINE_NUMBER___))");
+            if (includeDistanceFromCalculations.Value == DistanceFromTypeEnum.OpenCalc)
+                escapeAddValue(sb, "=SQRT(SUMXMY2($F$1:$H$1;F___HERE_CURRENT_LINE_NUMBER___:H___HERE_CURRENT_LINE_NUMBER___))");
+            else if (includeDistanceFromCalculations.Value == DistanceFromTypeEnum.Excel)
+                escapeAddValue(sb, "=SQRT(SUMXMY2($F$1:$H$1,F___HERE_CURRENT_LINE_NUMBER___:H___HERE_CURRENT_LINE_NUMBER___))");
             escapeAddValue(sb, star.position.x.ToString(floatFormat, spreadsheetLocale));
             escapeAddValue(sb, star.position.y.ToString(floatFormat, spreadsheetLocale));
             escapeAddValue(sb, star.position.z.ToString(floatFormat, spreadsheetLocale));
