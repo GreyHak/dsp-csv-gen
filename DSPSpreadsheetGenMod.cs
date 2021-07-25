@@ -473,23 +473,23 @@ namespace StarSectorResourceSpreadsheetGenerator
             }
 
             sb.Length = 0;
-            sb.Append(planet.displayName).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(star.displayName).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(star.dysonLumino.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(star.typeString).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(star.position.x.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(star.position.y.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(star.position.z.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+            escapeAddValue(sb, planet.displayName);
+            escapeAddValue(sb, star.displayName);
+            escapeAddValue(sb, star.dysonLumino.ToString(floatFormat, spreadsheetLocale));
+            escapeAddValue(sb, star.typeString);
+            escapeAddValue(sb, star.position.x.ToString(floatFormat, spreadsheetLocale));
+            escapeAddValue(sb, star.position.y.ToString(floatFormat, spreadsheetLocale));
+            escapeAddValue(sb, star.position.z.ToString(floatFormat, spreadsheetLocale));
 
-            if (ConfigExtraFlags.starAge.Value) { sb.Append(star.age.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.starColor.Value) { sb.Append(star.color.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.starLifetime.Value) { sb.Append(star.lifetime.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.starMass.Value) { sb.Append(star.mass.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.starRadius.Value) { sb.Append(star.radius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.starTemperature.Value) { sb.Append(star.temperature.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.distanceFromStarClusterCenter.Value) { sb.Append(Vector3.Distance(star.position, new Vector3(0,0,0)).ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetOrbitalPeriod.Value) { sb.Append(planet.orbitalPeriod.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetOrbitAround.Value) { sb.Append(planet.orbitAround).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.starAge.Value) { escapeAddValue(sb, star.age.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.starColor.Value) { escapeAddValue(sb, star.color.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.starLifetime.Value) { escapeAddValue(sb, star.lifetime.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.starMass.Value) { escapeAddValue(sb, star.mass.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.starRadius.Value) { escapeAddValue(sb, star.radius.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.starTemperature.Value) { escapeAddValue(sb, star.temperature.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.distanceFromStarClusterCenter.Value) { escapeAddValue(sb, Vector3.Distance(star.position, new Vector3(0, 0, 0)).ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetOrbitalPeriod.Value) { escapeAddValue(sb, planet.orbitalPeriod.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetOrbitAround.Value) { escapeAddValue(sb, planet.orbitAround.ToString()); }
             if (ConfigExtraFlags.planetOrbitAroundPlanet.Value)
             {
                 if (planet.orbitAroundPlanet == null)
@@ -498,34 +498,34 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 else
                 {
-                    sb.Append(planet.orbitAroundPlanet.displayName).Append(spreadsheetColumnSeparator.Value);
+                    escapeAddValue(sb, planet.orbitAroundPlanet.displayName);
                 }
             }
-            if (ConfigExtraFlags.planetOrbitInclination.Value) { sb.Append(planet.orbitInclination.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetOrbitLongitude.Value) { sb.Append(planet.orbitLongitude.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetOrbitPhase.Value) { sb.Append(planet.orbitPhase.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetOrbitRadius.Value) { sb.Append(planet.orbitRadius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetRealRadius.Value) { sb.Append(planet.realRadius.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetRotationPeriod.Value) { sb.Append(planet.rotationPeriod.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetRotationPhase.Value) { sb.Append(planet.rotationPhase.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
-            if (ConfigExtraFlags.planetSunDistance.Value) { sb.Append(planet.sunDistance.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value); }
+            if (ConfigExtraFlags.planetOrbitInclination.Value) { escapeAddValue(sb, planet.orbitInclination.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetOrbitLongitude.Value) { escapeAddValue(sb, planet.orbitLongitude.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetOrbitPhase.Value) { escapeAddValue(sb, planet.orbitPhase.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetOrbitRadius.Value) { escapeAddValue(sb, planet.orbitRadius.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetRealRadius.Value) { escapeAddValue(sb, planet.realRadius.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetRotationPeriod.Value) { escapeAddValue(sb, planet.rotationPeriod.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetRotationPhase.Value) { escapeAddValue(sb, planet.rotationPhase.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.planetSunDistance.Value) { escapeAddValue(sb, planet.sunDistance.ToString(floatFormat, spreadsheetLocale)); }
 
-            sb.Append(planet.windStrength.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(planet.luminosity.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(planet.typeString).Append(spreadsheetColumnSeparator.Value);
-            sb.Append(planet.landPercent.ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
-            sb.Append("\"" + planet.singularity + "\"").Append(spreadsheetColumnSeparator.Value);  // planet.singularity can contain commas, so it must be quoted.
+            escapeAddValue(sb, planet.windStrength.ToString(floatFormat, spreadsheetLocale));
+            escapeAddValue(sb, planet.luminosity.ToString(floatFormat, spreadsheetLocale));
+            escapeAddValue(sb, planet.typeString);
+            escapeAddValue(sb, planet.landPercent.ToString(floatFormat, spreadsheetLocale));
+            escapeAddValue(sb, planet.singularity.ToString());  
 
             if (planet.type == EPlanetType.Gas)
             {
-                sb.Append("None").Append(spreadsheetColumnSeparator.Value);  // Ocean
+                escapeAddValue(sb, "None");  // Ocean
                 EVeinType type = (EVeinType)1;
                 foreach (VeinProto item in LDB.veins.dataArray)
                 {
-                    sb.Append("0").Append(spreadsheetColumnSeparator.Value);
+                    escapeAddValue(sb, "0");
                     if (type != EVeinType.Oil && ConfigExtraFlags.veinCounts.Value)
                     {
-                        sb.Append("0").Append(spreadsheetColumnSeparator.Value);
+                        escapeAddValue(sb, "0");
                     }
                     type++;
                 }
@@ -534,11 +534,11 @@ namespace StarSectorResourceSpreadsheetGenerator
                     int index = Array.IndexOf(planet.gasItems, item);
                     if (index == -1)
                     {
-                        sb.Append("0").Append(spreadsheetColumnSeparator.Value);
+                        escapeAddValue(sb, "0");
                     }
                     else
                     {
-                        sb.Append(planet.gasSpeeds[index].ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+                        escapeAddValue(sb, planet.gasSpeeds[index].ToString(floatFormat, spreadsheetLocale));
                     }
                 }
             }
@@ -546,26 +546,26 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 if (planet.waterItemId == 0)
                 {
-                    sb.Append("None").Append(spreadsheetColumnSeparator.Value);
+                    escapeAddValue(sb, "None");
                 }
                 else if (planet.waterItemId == -1)
                 {
-                    sb.Append("Lava").Append(spreadsheetColumnSeparator.Value);
+                    escapeAddValue(sb, "Lava");
                 }
                 else if (planet.waterItemId == -2)
                 {
-                    sb.Append("Ice").Append(spreadsheetColumnSeparator.Value);
+                    escapeAddValue(sb, "Ice");
                 }
                 else
                 {
                     try
                     {
                         ItemProto waterItem = LDB.items.Select(planet.waterItemId);  // If this fails, it throws an exception which will hang the spreadsheet generation if not caught.
-                        sb.Append(waterItem.name).Append(spreadsheetColumnSeparator.Value);
+                        escapeAddValue(sb, waterItem.name);
                     }
                     catch
                     {
-                        sb.Append($"UNKNOWN ocean type {planet.waterItemId}.  Please write a ticket at https://github.com/GreyHak/dsp-csv-gen/issues.  Thank you.").Append(spreadsheetColumnSeparator.Value);
+                        escapeAddValue(sb, $"UNKNOWN ocean type {planet.waterItemId}.  Please write a ticket at https://github.com/GreyHak/dsp-csv-gen/issues.  Thank you.");
                     }
                 }
 
@@ -574,10 +574,10 @@ namespace StarSectorResourceSpreadsheetGenerator
                     EVeinType type = (EVeinType)1;
                     foreach (VeinProto item in LDB.veins.dataArray)
                     {
-                        sb.Append("Unloaded").Append(spreadsheetColumnSeparator.Value);
+                        escapeAddValue(sb, "Unloaded");
                         if (type != EVeinType.Oil && ConfigExtraFlags.veinCounts.Value)
                         {
-                            sb.Append("Unloaded").Append(spreadsheetColumnSeparator.Value);
+                            escapeAddValue(sb, "Unloaded");
                         }
                         type++;
                     }
@@ -590,11 +590,11 @@ namespace StarSectorResourceSpreadsheetGenerator
                         long amount = planet.veinAmounts[(int)type];
                         if (type == EVeinType.Oil)
                         {
-                            sb.Append(((double)amount * VeinData.oilSpeedMultiplier).ToString(floatFormat, spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+                            escapeAddValue(sb, ((double)amount * VeinData.oilSpeedMultiplier).ToString(floatFormat, spreadsheetLocale));
                         }
                         else
                         {
-                            sb.Append(amount.ToString(spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+                            escapeAddValue(sb, amount.ToString(spreadsheetLocale));
 
                             if (ConfigExtraFlags.veinCounts.Value)
                             {
@@ -607,7 +607,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                                     }
                                 }
 
-                                sb.Append(numVeins.ToString(spreadsheetLocale)).Append(spreadsheetColumnSeparator.Value);
+                                escapeAddValue(sb, numVeins.ToString(spreadsheetLocale));
                             }
                         }
                         type++;
@@ -615,7 +615,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 foreach (int item in gases)
                 {
-                    sb.Append("0").Append(spreadsheetColumnSeparator.Value);
+                    escapeAddValue(sb, "0");
                 }
             }
 
@@ -623,6 +623,21 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             planetResourceData[planet.id] = sb.ToString();
             progressImage.fillAmount = (float)planetResourceData.Count / planetCount;
+        }
+
+        /**
+         * Adds a value to the CSV, dealing with quotes and comas
+         */
+        public static void escapeAddValue(StringBuilder sb, string value)
+        {
+            bool hasComa = value.Contains(",");
+            string safeValue = value.Replace('"','_');
+            if (hasComa)
+                sb.Append('"');
+            sb.Append(safeValue);
+            if (hasComa)
+                sb.Append('"');
+            sb.Append(spreadsheetColumnSeparator.Value);
         }
 
         public static RectTransform triggerButton;
