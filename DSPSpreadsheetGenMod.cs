@@ -339,10 +339,24 @@ namespace StarSectorResourceSpreadsheetGenerator
                 Logger.LogInfo("Begin resource spreadsheet generation...");
 
                 var sb = new StringBuilder(8192);
+                //"Distance to target" fields and computations
+                int currLineNum = 1;
+                sb.Append("Distance Target").Append(spreadsheetColumnSeparator.Value); // Col A
+                sb.Append(spreadsheetColumnSeparator.Value);// Col B
+                sb.Append(spreadsheetColumnSeparator.Value);// Col C
+                sb.Append(spreadsheetColumnSeparator.Value);// Col D
+                sb.Append(spreadsheetColumnSeparator.Value);// Col E
+                sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;6;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col F ==> Current target X
+                sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;7;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col G ==> Current target Y
+                sb.Append("=VLOOKUP($A$2;$A$4:$H$___HERE_TOTAL_LINE_NUMBER___;8;FALSE)").Append(spreadsheetColumnSeparator.Value);// Col H ==> Current target Z
+                sb.Append(Environment.NewLine); currLineNum++;
+                sb.Append("!!! erase this and add data constraint to this cell so that it takes a value from cells A4 to A___HERE_TOTAL_LINE_NUMBER___ (all planet names)").Append(Environment.NewLine); currLineNum++;
+                // column headers
                 sb.Append("Planet Name").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Name").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Dyson Luminosity").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Type").Append(spreadsheetColumnSeparator.Value);
+                sb.Append("Distance to target").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Position X").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Position Y").Append(spreadsheetColumnSeparator.Value);
                 sb.Append("Star Position Z").Append(spreadsheetColumnSeparator.Value);
@@ -391,7 +405,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 {
                     sb.Append(LDB.items.Select(item).name).Append(spreadsheetColumnSeparator.Value);
                 }
-                sb.Append(Environment.NewLine);
+                sb.Append(Environment.NewLine); currLineNum++;
 
                 foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
                 {
@@ -399,12 +413,12 @@ namespace StarSectorResourceSpreadsheetGenerator
                     {
                         if (planetResourceData.ContainsKey(planet.id))
                         {
-                            sb.Append(planetResourceData[planet.id]);
+                            sb.Append(planetResourceData[planet.id].Replace("___HERE_CURRENT_LINE_NUMBER___",currLineNum.ToString())); currLineNum++;
                         }
                         else
                         {
                             Logger.LogError("ERROR: Missing resource data for " + planet.displayName);
-                            sb.AppendFormat("{0}\n", planet.displayName);
+                            sb.AppendFormat("{0}\n", planet.displayName); currLineNum++;
                         }
                     }
                 }
@@ -418,7 +432,9 @@ namespace StarSectorResourceSpreadsheetGenerator
                 System.IO.FileInfo file = new System.IO.FileInfo(spreadsheetFileName);
                 file.Directory.Create(); // If the directory already exists, this method does nothing.
 
-                File.WriteAllText(spreadsheetFileName, sb.ToString());
+                string content = sb.ToString();
+                content = content.Replace("___HERE_TOTAL_LINE_NUMBER___", currLineNum.ToString());
+                File.WriteAllText(spreadsheetFileName, content);
 
                 Logger.LogInfo("Completed saving resource spreadsheet.");
             }
@@ -477,6 +493,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             escapeAddValue(sb, star.displayName);
             escapeAddValue(sb, star.dysonLumino.ToString(floatFormat, spreadsheetLocale));
             escapeAddValue(sb, star.typeString);
+            escapeAddValue(sb, "=SQRT(SUMXMY2($F$1:$H$1;F___HERE_CURRENT_LINE_NUMBER___:H___HERE_CURRENT_LINE_NUMBER___))");
             escapeAddValue(sb, star.position.x.ToString(floatFormat, spreadsheetLocale));
             escapeAddValue(sb, star.position.y.ToString(floatFormat, spreadsheetLocale));
             escapeAddValue(sb, star.position.z.ToString(floatFormat, spreadsheetLocale));
