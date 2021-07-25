@@ -424,39 +424,39 @@ namespace StarSectorResourceSpreadsheetGenerator
             }
             catch (ArgumentNullException e)
             {
-                Logger.LogInfo("ERROR: ArgumentNullException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: ArgumentNullException while generating and saving resource spreadsheet: " + e.Message + ";" + e.ToString());
             }
             catch (ArgumentException e)
             {
-                Logger.LogInfo("ERROR: ArgumentException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: ArgumentException while generating and saving resource spreadsheet: " + e.Message + ";" + e.ToString());
             }
             catch (PathTooLongException e)
             {
-                Logger.LogInfo("ERROR: PathTooLongException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: PathTooLongException while generating and saving resource spreadsheet: " + e.Message + ";" + e.ToString());
             }
             catch (DirectoryNotFoundException e)
             {
-                Logger.LogInfo("ERROR: DirectoryNotFoundException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: DirectoryNotFoundException while generating and saving resource spreadsheet: " + e.Message + ";" + e.ToString());
             }
             catch (IOException e)
             {
-                Logger.LogInfo("ERROR: IOException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: IOException while generating and saving resource spreadsheet: " + e.Message + ";" + e.ToString());
             }
             catch (UnauthorizedAccessException e)
             {
-                Logger.LogInfo("ERROR: UnauthorizedAccessException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: UnauthorizedAccessException while generating and saving resource spreadsheet: " + e.Message + ";" + e.ToString());
             }
             catch (NotSupportedException e)
             {
-                Logger.LogInfo("ERROR: NotSupportedException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: NotSupportedException while generating and saving resource spreadsheet: " + e.Message + ";" + e.ToString());
             }
             catch (SecurityException e)
             {
-                Logger.LogInfo("ERROR: SecurityException while generating and saving resource spreadsheet: " + e.Message);
+                Logger.LogInfo("ERROR: SecurityException while generating and saving resource spreadsheet: " + e.Message+";" + e.ToString());
             }
-            catch
+            catch(Exception e)
             {
-                Logger.LogInfo("ERROR: Exception (catch-all) while generating and saving resource spreadsheet.");
+                Logger.LogInfo("ERROR: Exception (catch-all) while generating and saving resource spreadsheet." + e.Message + ";" + e.ToString());
             }
 
             progressImage.fillAmount = 0;
