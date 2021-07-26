@@ -12,7 +12,7 @@ Chinese support: The spreadsheet generation has been tested with Dyson Sphere Pr
 
 If you like this mod, please click the thumbs up at the [top of the page](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) (next to the Total rating).  That would be a nice thank you for me, and help other people to find a mod you enjoy.
 
-If you have issues with this mod, please report them on [GitHub](https://github.com/GreyHak/dsp-csv-gen/issues).  I try to respond within 12 hours.    You can also contact me at GreyHak#2995 on the [DSP Modding](https://discord.gg/XxhyTNte) Discord #tech-support channel.
+If you have issues with this mod, please report them on [GitHub](https://github.com/GreyHak/dsp-csv-gen/issues).  You can also contact me at GreyHak#2995 on the [DSP Modding](https://discord.gg/XxhyTNte) Discord #tech-support channel.
 
 ## Usage
 Generation of the resource spreadsheet is triggered with a button click, by loading a save or by pausing the game.
@@ -74,7 +74,7 @@ Settings include:
  - **More Data:**  17 parameters, 7 for the star and 10 for the planet, can be configurably enabled.  Less clutter for most people.  Extra data for those that want it.
 
 ## Installation
-This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.5.0 and Dyson Sphere Program 0.7.18.7103 on Windows 10.
+This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.11.0 and Dyson Sphere Program 0.8.19.7677 on Windows 10.
 
 To manually install this mod, add the `DSPResourceSpreadsheetGenMod.dll` to your `%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\` folder.
 
@@ -153,7 +153,7 @@ The source code for this mod is available for download, review and forking on Gi
  - **更多数据**：17个参数可供选择启用，7个恒星参数，10个行星参数，如温度、年龄、颜色等。通常这些参数并没有什么用，但总有人需要。
 
 ## 安装
-本mod需要BepInEx mod插件框架，所以要使用此mod必须先安装BepInEx。请在[用户指南](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1)中查阅BepInEx的安装信息。本mod已在Windows10上经BepInEx x64 5.4.5.0和戴森球计划0.7.18.7103版本进行测试。
+本mod需要BepInEx mod插件框架，所以要使用此mod必须先安装BepInEx。请在[用户指南](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1)中查阅BepInEx的安装信息。本mod已在Windows10上经BepInEx x64 5.4.11.0和戴森球计划0.8.19.7677版本进行测试。
 
 要手动安装本mod，请添加`DSPResourceSpreadsheetGenMod.dll`至`%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\`文件夹。
 
@@ -163,6 +163,9 @@ The source code for this mod is available for download, review and forking on Gi
 在BSD3条例许可下，本mod的源代码可供在[GitHub](https://github.com/GreyHak/dsp-csv-gen)下载、查看、克隆。
 
 ## Change Log
+### v3.2.0
+ - New feature added to allow users to select which planet they want to use has a reference for disance calculations.  Planet is selected in the spreadsheet after the spreadsheet is generated.  This feature is enabled with the Output DistanceFrom configuration setting.  New feature with support for OpenOffice Calc added by [ThomasBlt](https://github.com/ThomasBlt).  His submission has been enhanced to make it optional (disabled by default), and add support for Microsoft Excel in addition to OpenOffice Calc.
+ - Bug fix for planets with commas. Fix from [ThomasBlt](https://github.com/ThomasBlt).
 ### v3.1.4
  - New ocean type from v3.1.3 now identified as Ice.  Thanks to [Posi](https://github.com/posi74de) for the report and the information.
 ### v3.1.3 (Beta)
