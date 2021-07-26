@@ -165,6 +165,7 @@ The source code for this mod is available for download, review and forking on Gi
 ## Change Log
 ### v3.2.0
  - New feature added to allow users to select which planet they want to use has a reference for disance calculations.  Planet is selected in the spreadsheet after the spreadsheet is generated.  This feature is enabled with the Output DistanceFrom configuration setting.  New feature with support for OpenOffice Calc added by [ThomasBlt](https://github.com/ThomasBlt).  His submission has been enhanced to make it optional (disabled by default), and add support for Microsoft Excel in addition to OpenOffice Calc.
+ - Bug fixed which was causing data to show as Unloaded.
  - Bug fix for planets with commas. Fix from [ThomasBlt](https://github.com/ThomasBlt).
 ### v3.1.4
  - New ocean type from v3.1.3 now identified as Ice.  Thanks to [Posi](https://github.com/posi74de) for the report and the information.

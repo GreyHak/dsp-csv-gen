@@ -55,11 +55,11 @@ namespace StarSectorResourceSpreadsheetGenerator
 
         public enum DistanceFromTypeEnum
         {
-            [Description("Disable will not include equations for calculating distance-from.")]
+            [Description("Disable post-generation distance calculations")]
             Disabled,
-            [Description("Excel will format the distance-from calculations for Microsoft Excel.")]
+            [Description("EXCEL for post-generation distance calculations")]
             Excel,
-            [Description("Open Calc will format the distance-from calculations for OpenOffice Calc.")]
+            [Description("OPEN CALC for post-generation distance calculations")]
             OpenCalc,
         };
         public static BepInEx.Configuration.ConfigEntry<DistanceFromTypeEnum> includeDistanceFromCalculations;
@@ -196,18 +196,21 @@ namespace StarSectorResourceSpreadsheetGenerator
             {
                 foreach (PlanetData planet in star.planets)
                 {
-                    if (enablePlanetLoadingFlag.Value && (planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0) && !planetResourceData.ContainsKey(planet.id))
+                    if (!planetResourceData.ContainsKey(planet.id))
                     {
-                        planetsToLoad.Add(planet);
+                        if (enablePlanetLoadingFlag.Value && (planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0))
+                        {
+                            planetsToLoad.Add(planet);
 
-                        // Code for testing simultanious loading.
-                        //System.Random random = new System.Random(42);  // Move this before the loop when using to test
-                        //if (random.NextDouble() < 0.1)  // 10%
-                        //    planet.Load();
-                    }
-                    else
-                    {
-                        CapturePlanetResourceData(planet, sb);
+                            // Code for testing simultanious loading.
+                            //System.Random random = new System.Random(42);  // Move this before the loop when using to test
+                            //if (random.NextDouble() < 0.1)  // 10%
+                            //    planet.Load();
+                        }
+                        else
+                        {
+                            CapturePlanetResourceData(planet, sb);
+                        }
                     }
                 }
             }
