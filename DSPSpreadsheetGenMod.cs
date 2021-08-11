@@ -36,7 +36,7 @@ namespace StarSectorResourceSpreadsheetGenerator
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "3.2.0";
+        public const string pluginVersion = "3.2.1";
 
         public static bool spreadsheetGenRequestFlag = false;
         public static List<PlanetData> planetsToLoad = new List<PlanetData> { };
@@ -71,6 +71,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             public static BepInEx.Configuration.ConfigEntry<bool> starLifetime;
             public static BepInEx.Configuration.ConfigEntry<bool> starMass;
             public static BepInEx.Configuration.ConfigEntry<bool> starRadius;
+            public static BepInEx.Configuration.ConfigEntry<bool> starMaxSphereRadius;
             public static BepInEx.Configuration.ConfigEntry<bool> starTemperature;
             public static BepInEx.Configuration.ConfigEntry<bool> distanceFromStarClusterCenter;
             public static BepInEx.Configuration.ConfigEntry<bool> planetOrbitalPeriod;
@@ -115,6 +116,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             ConfigExtraFlags.starLifetime = Config.Bind<bool>("ExtraData", "StarLifetime", false, "Add stars' lifetime to the spreadsheet");
             ConfigExtraFlags.starMass = Config.Bind<bool>("ExtraData", "StarMass", false, "Add stars' mass to the spreadsheet");
             ConfigExtraFlags.starRadius = Config.Bind<bool>("ExtraData", "StarRadius", false, "Add stars' radius to the spreadsheet");
+            ConfigExtraFlags.starMaxSphereRadius = Config.Bind<bool>("ExtraData", "StarMaxSphereRadius", false, "The star's maximum dyson shell layer 'orbit radius'.  This is calculated by round(StarData.dysonRadius * 800) * 100.");
             ConfigExtraFlags.starTemperature = Config.Bind<bool>("ExtraData", "StarTemperature", false, "Add stars' temperature to the spreadsheet");
             ConfigExtraFlags.distanceFromStarClusterCenter = Config.Bind<bool>("ExtraData", "DistanceFromStarClusterCenter", false, "Add star's distance from the center of the star cluster.  This is typically the location of the initial planet's star.");
             ConfigExtraFlags.planetOrbitalPeriod = Config.Bind<bool>("ExtraData", "PlanetOrbitalPeriod", false, "Add planets' orbital period to the spreadsheet");
@@ -399,6 +401,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 if (ConfigExtraFlags.starLifetime.Value) { sb.Append("Star Lifetime").Append(spreadsheetColumnSeparator.Value); }
                 if (ConfigExtraFlags.starMass.Value) { sb.Append("Star Mass").Append(spreadsheetColumnSeparator.Value); }
                 if (ConfigExtraFlags.starRadius.Value) { sb.Append("Star Radius").Append(spreadsheetColumnSeparator.Value); }
+                if (ConfigExtraFlags.starMaxSphereRadius.Value) { sb.Append("Max Sphere Radius").Append(spreadsheetColumnSeparator.Value); }
                 if (ConfigExtraFlags.starTemperature.Value) { sb.Append("Star Temperature").Append(spreadsheetColumnSeparator.Value); }
                 if (ConfigExtraFlags.distanceFromStarClusterCenter.Value) { sb.Append("Distance from Cluster Center").Append(spreadsheetColumnSeparator.Value); }
                 if (ConfigExtraFlags.planetOrbitalPeriod.Value) { sb.Append("Orbital Period").Append(spreadsheetColumnSeparator.Value); }
@@ -542,6 +545,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             if (ConfigExtraFlags.starLifetime.Value) { escapeAddValue(sb, star.lifetime.ToString(floatFormat, spreadsheetLocale)); }
             if (ConfigExtraFlags.starMass.Value) { escapeAddValue(sb, star.mass.ToString(floatFormat, spreadsheetLocale)); }
             if (ConfigExtraFlags.starRadius.Value) { escapeAddValue(sb, star.radius.ToString(floatFormat, spreadsheetLocale)); }
+            if (ConfigExtraFlags.starMaxSphereRadius.Value) { escapeAddValue(sb, (Math.Round(star.dysonRadius * 800) * 100).ToString(floatFormat, spreadsheetLocale)); }
             if (ConfigExtraFlags.starTemperature.Value) { escapeAddValue(sb, star.temperature.ToString(floatFormat, spreadsheetLocale)); }
             if (ConfigExtraFlags.distanceFromStarClusterCenter.Value) { escapeAddValue(sb, Vector3.Distance(star.position, new Vector3(0, 0, 0)).ToString(floatFormat, spreadsheetLocale)); }
             if (ConfigExtraFlags.planetOrbitalPeriod.Value) { escapeAddValue(sb, planet.orbitalPeriod.ToString(floatFormat, spreadsheetLocale)); }

@@ -163,6 +163,8 @@ The source code for this mod is available for download, review and forking on Gi
 在BSD3条例许可下，本mod的源代码可供在[GitHub](https://github.com/GreyHak/dsp-csv-gen)下载、查看、克隆。
 
 ## Change Log
+### v3.2.1
+ - Added new optional output for the star's maximum dyson sphere shell "orbital radius".
 ### v3.2.0
  - New feature added to allow users to select which planet they want to use has a reference for disance calculations.  Planet is selected in the spreadsheet after the spreadsheet is generated.  This feature is enabled with the Output DistanceFrom configuration setting.  New feature with support for OpenOffice Calc added by [ThomasBlt](https://github.com/ThomasBlt).  His submission has been enhanced to make it optional (disabled by default), and add support for Microsoft Excel in addition to OpenOffice Calc.
  - Bug fixed which was causing data to show as Unloaded.
