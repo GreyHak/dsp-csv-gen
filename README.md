@@ -80,6 +80,8 @@ To manually install this mod, add the `DSPResourceSpreadsheetGenMod.dll` to your
 
 This mod can also be installed using ebkr's [r2modman](https://dsp.thunderstore.io/package/ebkr/r2modman/) mod manager by clicking "Install with Mod Manager" on the [DSP Modding](https://dsp.thunderstore.io/package/GreyHak/DSP_Star_Sector_Resource_Spreadsheet_Generator/) site.
 
+This mod is only compatible with GalacticScale when that mod is configured for pure vanilla generation.
+
 ## Open Source
 The source code for this mod is available for download, review and forking on GitHub [here](https://github.com/GreyHak/dsp-csv-gen) under the BSD 3 clause license.
 
