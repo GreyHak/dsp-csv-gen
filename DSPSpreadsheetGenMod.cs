@@ -9,9 +9,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Globalization;
 using BepInEx;
 using HarmonyLib;
@@ -23,6 +21,8 @@ using System.Security;
 using System.Threading;
 using System.Security.Permissions;
 using System.ComponentModel;
+using System.Reflection.Emit;
+using System.Reflection;
 
 [module: UnverifiableCode]
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -31,6 +31,7 @@ using System.ComponentModel;
 namespace StarSectorResourceSpreadsheetGenerator
 {
     [BepInPlugin(pluginGuid, pluginName, pluginVersion)]
+    [BepInDependency("dsp.galactic-scale.2", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInProcess("DSPGAME.exe")]
     public class SpreadsheetGenMod : BaseUnityPlugin  // Plugin config: "C:\Program Files (x86)\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\BepInEx.cfg"
     {
@@ -47,11 +48,14 @@ namespace StarSectorResourceSpreadsheetGenerator
         new internal static BepInEx.Configuration.ConfigFile Config;
         public static readonly int[] gases = { 1120, 1121, 1011 };
         public static int planetCount = 0;
+        public static long[] veinAmounts = new long[64];
+        public static StringBuilder stringBuilder;
 
         public static BepInEx.Configuration.ConfigEntry<bool> enablePlanetLoadingFlag;
         public static BepInEx.Configuration.ConfigEntry<string> spreadsheetFileNameTemplate;
         public static BepInEx.Configuration.ConfigEntry<string> spreadsheetColumnSeparator;
         public static BepInEx.Configuration.ConfigEntry<int> spreadsheetFloatPrecision;
+        public Harmony harmony;
 
         public enum DistanceFromTypeEnum
         {
@@ -88,8 +92,6 @@ namespace StarSectorResourceSpreadsheetGenerator
             public static BepInEx.Configuration.ConfigEntry<bool> veinCounts;
         }
 
-        private static Thread veinGenerationThread;
-        private static PlanetModelingManager.ThreadFlag planetComputeThreadState;
         private static object planetComputeThreadMutexLock = new object();
 
         public void Awake()
@@ -136,14 +138,34 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             Logger.LogInfo("Will use spreadsheet path \"" + spreadsheetFileNameTemplate.Value + "\"");
 
-            Harmony harmony = new Harmony(pluginGuid);
+            harmony = new Harmony(pluginGuid);
             harmony.PatchAll(typeof(SpreadsheetGenMod));
 
-            planetComputeThreadState = PlanetModelingManager.ThreadFlag.Running;
-            veinGenerationThread = new Thread(new ThreadStart(VeinGenerationThread));
-            veinGenerationThread.Start();
+            // GS2 compatibility patch 
+            if (BepInEx.Bootstrap.Chainloader.PluginInfos.TryGetValue("dsp.galactic-scale.2", out var pluginInfo))
+            {
+                try
+                {
+                    // GS2 overwrite PlanetCalculateThreadMain in GalacticScale.Modeler
+                    // So this patch add checking after calcPlanet.NotifyCalculated
+                    var transplier = new HarmonyMethod(typeof(SpreadsheetGenMod).GetMethod("PlanetCalculateThreadMain_Transpiler"));
+                    Type classType = pluginInfo.Instance.GetType().Assembly.GetType("GalacticScale.Modeler");
+                    harmony.Patch(AccessTools.Method(classType, "Calculate"), null, null, transplier);
+                    Logger.LogInfo("GalacticScale compatibility patch success!");
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError("Fail to patch GalacticScale.Modeler.Calculate");
+                    Logger.LogError(e);
+                }
+            }
 
             Logger.LogInfo("Initialization complete.");
+        }
+
+        public void OnDestroy()
+        {
+            harmony.UnpatchSelf(); //Harmony.UnpatchID(pluginGuid) works for BepInEx 5.4.18 and above versions
         }
 
         public static void OnConfigSettingChanged(object sender, BepInEx.Configuration.SettingChangedEventArgs e)
@@ -200,18 +222,17 @@ namespace StarSectorResourceSpreadsheetGenerator
                 {
                     if (!planetResourceData.ContainsKey(planet.id))
                     {
-                        if (enablePlanetLoadingFlag.Value && (planet.type != EPlanetType.Gas) && (planet.veinGroups.Length == 0))
+                        if (planet.calculated)
+                        {
+                            CapturePlanetResourceData(planet, sb);
+                        }
+                        else if (enablePlanetLoadingFlag.Value)
                         {
                             planetsToLoad.Add(planet);
-
                             // Code for testing simultanious loading.
                             //System.Random random = new System.Random(42);  // Move this before the loop when using to test
                             //if (random.NextDouble() < 0.1)  // 10%
                             //    planet.Load();
-                        }
-                        else
-                        {
-                            CapturePlanetResourceData(planet, sb);
                         }
                     }
                 }
@@ -233,6 +254,10 @@ namespace StarSectorResourceSpreadsheetGenerator
 
                 Monitor.Enter(planetComputeThreadMutexLock);
                 spreadsheetGenRequestFlag = true;
+                foreach (PlanetData planet in planetsToLoad)
+                {
+                    planet.RunCalculateThread();
+                }
                 Monitor.Exit(planetComputeThreadMutexLock);
             }
         }
@@ -255,7 +280,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 if (planetData.factory == null)
                 {
                     //planetAlgorithm.GenerateVegetables();
-                    planetAlgorithm.GenerateVeins(false);
+                    planetAlgorithm.GenerateVeins();
                 }
             }
         }
@@ -279,7 +304,8 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             if (PlanetModelingManager.genPlanetReqList.Count == 0 &&
                 PlanetModelingManager.fctPlanetReqList.Count == 0 &&
-                PlanetModelingManager.modPlanetReqList.Count == 0)
+                PlanetModelingManager.modPlanetReqList.Count == 0 &&
+                PlanetModelingManager.calPlanetReqList.Count == 0)
             {
                 Logger.LogInfo("Planet modeling reset is not needed.");
                 return;
@@ -287,6 +313,7 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             Logger.LogInfo("Stopping planet modeling thread.");
             PlanetModelingManager.EndPlanetComputeThread();
+            PlanetModelingManager.EndPlanetCalculateThread();
             Thread.Sleep(100);
 
             uint sleepIterationCount = 1;
@@ -300,6 +327,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             PlanetModelingManager.genPlanetReqList.Clear();  // RequestLoadStar or RequestLoadPlanet -> PlanetComputeThreadMain
             PlanetModelingManager.fctPlanetReqList.Clear();  // RequestLoadPlanetFactory -> LoadingPlanetFactoryCoroutine
             PlanetModelingManager.modPlanetReqList.Clear();  // ModelingPlanetCoroutine -> ModelingPlanetMain
+            PlanetModelingManager.calPlanetReqList.Clear();  // RequestCalcStar or RequestCalcPlanet -> PlanetComputeThreadMain
 
             if (PlanetModelingManager.currentModelingPlanet != null)
             {
@@ -343,12 +371,57 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             Logger.LogInfo("Restarting planet modeling thread.");
             PlanetModelingManager.StartPlanetComputeThread();
+            PlanetModelingManager.StartPlanetCalculateThread();
         }
 
-        [HarmonyPrefix, HarmonyPatch(typeof(PlanetData), "NotifyLoaded")]
-        public static void PlanetData_NotifyLoaded_Prefix()
+        [HarmonyTranspiler, HarmonyPatch(typeof(PlanetModelingManager), "PlanetCalculateThreadMain")]
+        public static IEnumerable<CodeInstruction> PlanetCalculateThreadMain_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            Logger.LogDebug("Planet loaded.");
+            // Use transpiler due to PlanetData.NotifyCalculated is inlined
+            try
+            {
+                CodeMatcher matcher = new CodeMatcher(instructions)
+                    .MatchForward(true, new CodeMatch(i => i.opcode == OpCodes.Callvirt && ((MethodInfo)i.operand).Name == "NotifyCalculated"))
+                    .Advance(1);
+
+                matcher.InsertAndAdvance(
+                    matcher.InstructionAt(-2),
+                    HarmonyLib.Transpilers.EmitDelegate<Action<PlanetData>>((planet) =>
+                    {
+                        Monitor.Enter(planetComputeThreadMutexLock);
+                        if (spreadsheetGenRequestFlag)
+                        {
+                            if (planetsToLoad.Contains(planet))
+                            {
+                                if (stringBuilder == null)
+                                {
+                                    stringBuilder = new StringBuilder(8192);
+                                }
+                                CapturePlanetResourceData(planet, stringBuilder);
+                                if (planetResourceData.Count == planetCount)
+                                {
+                                    GenerateResourceSpreadsheet();
+                                    stringBuilder = null;
+                                }
+
+                                // Free resource to reduce RAM usage
+                                planet.data.Free();
+                                planet.data = null;
+                                planet.modData = null;
+                                planet.aux = null;
+                                planet.calculated = false;
+                            }
+                        }
+                        Monitor.Exit(planetComputeThreadMutexLock);
+                    }));
+
+                return matcher.InstructionEnumeration();
+            }
+            catch
+            {
+                Logger.LogError("Transpiler PlanetCalculateThreadMain failed. Mod version not compatible with game version.");
+                return instructions;
+            }
         }
 
         // Called when all planets are loaded.  Saves resource spreadsheet.
@@ -629,7 +702,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                     }
                 }
 
-                if (planet.veinGroups.Length == 0)
+                if (planet.runtimeVeinGroups == null)
                 {
                     EVeinType type = (EVeinType)1;
                     foreach (VeinProto item in LDB.veins.dataArray)
@@ -644,10 +717,11 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 else
                 {
+                    planet.CalcVeinAmounts(ref veinAmounts);
                     EVeinType type = (EVeinType)1;
                     foreach (VeinProto item in LDB.veins.dataArray)
                     {
-                        long amount = planet.veinAmounts[(int)type];
+                        long amount = veinAmounts[(int)type];
                         if (type == EVeinType.Oil)
                         {
                             escapeAddValue(sb, ((double)amount * VeinData.oilSpeedMultiplier).ToString(floatFormat, spreadsheetLocale));
@@ -659,7 +733,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                             if (ConfigExtraFlags.veinCounts.Value)
                             {
                                 long numVeins = 0;
-                                foreach (PlanetData.VeinGroup veinGroup in planet.veinGroups)
+                                foreach (VeinGroup veinGroup in planet.runtimeVeinGroups)
                                 {
                                     if (veinGroup.type == type)
                                     {
@@ -820,204 +894,6 @@ namespace StarSectorResourceSpreadsheetGenerator
                 return false;
             }
             return true;
-        }
-
-        [HarmonyPrefix, HarmonyPatch(typeof(UIRunner), "HandleApplicationQuit")]
-        public static void UIRunner_HandleApplicationQuit_Prefix()
-        {
-            planetComputeThreadState = PlanetModelingManager.ThreadFlag.Ending;
-        }
-
-        public static uint timeoutCount = 0;
-
-        private static void VeinGenerationThread()
-        {
-            PlanetData planetCopy = new PlanetData();
-            StringBuilder sb = new StringBuilder(8192);
-
-            Logger.LogInfo("Vein generation thread started.");
-            while (planetComputeThreadState == PlanetModelingManager.ThreadFlag.Running)
-            {
-                PlanetData planetOrig = null;
-
-                Monitor.Enter(planetComputeThreadMutexLock);
-                if (spreadsheetGenRequestFlag)
-                {
-                    if (planetsToLoad.Count > 0)
-                    {
-                        planetOrig = planetsToLoad[0];
-                        planetsToLoad.RemoveAt(0);
-                        timeoutCount = 0;
-                    }
-                    else  // Quick loading is done, but not all the planets were captured.  So check and wait.
-                    {
-                        foreach (StarData star in GameMain.universeSimulator.galaxyData.stars)
-                        {
-                            foreach (PlanetData planet in star.planets)
-                            {
-                                if (!planetResourceData.ContainsKey(planet.id))
-                                {
-                                    if (planet.veinGroups.Length != 0)
-                                    {
-                                        CapturePlanetResourceData(planet, sb);
-                                        Logger.LogInfo(planetOrig.displayName + " picked up.");
-                                    }
-                                    // If the planet data hasn't been captured yet, and the data isn't available
-                                    // then the planet better still be loading, or we have a problem.
-                                    else if (!planet.loading)
-                                    {
-                                        CapturePlanetResourceData(planet, sb);
-                                        Logger.LogError("ERROR: Planet state mismatch.  Skipping planet.  Output will not contain data for " + planet.displayName);
-                                    }
-                                }
-                            }
-                        }
-
-                        if (planetResourceData.Count == planetCount)
-                        {
-                            GenerateResourceSpreadsheet();
-                        }
-                        else
-                        {
-                            if (++timeoutCount >= 300)  // In 10ths of a second (based on the sleep just below)
-                            {
-                                Logger.LogWarning("WARNING: Timeout.  Data for only " + planetResourceData.Count.ToString() + " of " + planetCount.ToString() + " planets available.  Proceeding with spreadsheet generation anyway.");
-                                GenerateResourceSpreadsheet();
-                            }
-                        }
-                    }
-                }
-                Monitor.Exit(planetComputeThreadMutexLock);
-
-                if (planetOrig == null)
-                {
-                    Thread.Sleep(100);
-                }
-                else
-                {
-                    // There's very little chance this is going to happen, but let's catch it just in case.
-                    if (planetOrig.veinGroups.Length != 0)
-                    {
-                        CapturePlanetResourceData(planetOrig, sb);
-                        Logger.LogInfo(planetOrig.displayName + " captured from original.");
-                    }
-                    else if (planetOrig.loading)
-                    {
-                        // Don't want to copy a planet while it's loading.  If this
-                        // happens, we'll wait at the end for it to finish.
-                        Logger.LogInfo(planetOrig.displayName + " found to be loading.  Skipping this planet.");
-                    }
-                    else
-                    {
-                        planetCopy.galaxy = planetOrig.galaxy;
-                        planetCopy.star = planetOrig.star;
-                        planetCopy.seed = planetOrig.seed;
-                        planetCopy.id = planetOrig.id;
-                        planetCopy.index = planetOrig.index;
-                        planetCopy.orbitAround = planetOrig.orbitAround;
-                        planetCopy.number = planetOrig.number;
-                        planetCopy.orbitIndex = planetOrig.orbitIndex;
-                        planetCopy.name = planetOrig.name;
-                        planetCopy.overrideName = planetOrig.overrideName;
-                        planetCopy.orbitRadius = planetOrig.orbitRadius;
-                        planetCopy.orbitInclination = planetOrig.orbitInclination;
-                        planetCopy.orbitLongitude = planetOrig.orbitLongitude;
-                        planetCopy.orbitalPeriod = planetOrig.orbitalPeriod;
-                        planetCopy.orbitPhase = planetOrig.orbitPhase;
-                        planetCopy.obliquity = planetOrig.obliquity;
-                        planetCopy.rotationPeriod = planetOrig.rotationPeriod;
-                        planetCopy.rotationPhase = planetOrig.rotationPhase;
-                        planetCopy.radius = planetOrig.radius;
-                        planetCopy.scale = planetOrig.scale;
-                        planetCopy.sunDistance = planetOrig.sunDistance;
-                        planetCopy.habitableBias = planetOrig.habitableBias;
-                        planetCopy.temperatureBias = planetOrig.temperatureBias;
-                        planetCopy.ionHeight = planetOrig.ionHeight;
-                        planetCopy.windStrength = planetOrig.windStrength;
-                        planetCopy.luminosity = planetOrig.luminosity;
-                        planetCopy.landPercent = planetOrig.landPercent;
-                        planetCopy.mod_x = planetOrig.mod_x;
-                        planetCopy.mod_y = planetOrig.mod_y;
-                        planetCopy.waterHeight = planetOrig.waterHeight;
-                        planetCopy.waterItemId = planetOrig.waterItemId;
-                        planetCopy.levelized = planetOrig.levelized;
-                        planetCopy.type = planetOrig.type;
-                        planetCopy.singularity = planetOrig.singularity;
-                        planetCopy.theme = planetOrig.theme;
-                        planetCopy.algoId = planetOrig.algoId;
-                        planetCopy.orbitAroundPlanet = planetOrig.orbitAroundPlanet;
-                        planetCopy.runtimePosition = planetOrig.runtimePosition;
-                        planetCopy.runtimePositionNext = planetOrig.runtimePositionNext;
-                        planetCopy.runtimeRotation = planetOrig.runtimeRotation;
-                        planetCopy.runtimeRotationNext = planetOrig.runtimeRotationNext;
-                        planetCopy.runtimeSystemRotation = planetOrig.runtimeSystemRotation;
-                        planetCopy.runtimeOrbitRotation = planetOrig.runtimeOrbitRotation;
-                        planetCopy.runtimeOrbitPhase = planetOrig.runtimeOrbitPhase;
-                        planetCopy.runtimeRotationPhase = planetOrig.runtimeRotationPhase;
-                        planetCopy.uPosition = planetOrig.uPosition;
-                        planetCopy.uPositionNext = planetOrig.uPositionNext;
-                        planetCopy.runtimeLocalSunDirection = planetOrig.runtimeLocalSunDirection;
-                        planetCopy.veinSpotsSketch = planetOrig.veinSpotsSketch;
-                        planetCopy.veinAmounts = planetOrig.veinAmounts;
-                        planetCopy.veinGroups = planetOrig.veinGroups;
-                        planetCopy.modData = planetOrig.modData;
-                        planetCopy.precision = planetOrig.precision;
-                        planetCopy.segment = planetOrig.segment;
-                        planetCopy.data = planetOrig.data;
-                        //planetCopy.kMaxMeshCnt = planetOrig.kMaxMeshCnt;
-                        planetCopy.gameObject = planetOrig.gameObject;
-                        planetCopy.bodyObject = planetOrig.bodyObject;
-                        planetCopy.terrainMaterial = planetOrig.terrainMaterial;
-                        planetCopy.oceanMaterial = planetOrig.oceanMaterial;
-                        planetCopy.atmosMaterial = planetOrig.atmosMaterial;
-                        planetCopy.minimapMaterial = planetOrig.minimapMaterial;
-                        //CHANGE: planetCopy.reformMaterial0 = planetOrig.reformMaterial0;
-                        //CHANGE: planetCopy.reformMaterial1 = planetOrig.reformMaterial1;
-                        planetCopy.heightmap = planetOrig.heightmap;
-                        planetCopy.ambientDesc = planetOrig.ambientDesc;
-                        //planetCopy.ambientSfx = planetOrig.ambientSfx;
-                        planetCopy.ambientSfxVolume = planetOrig.ambientSfxVolume;
-                        planetCopy.meshes = planetOrig.meshes;
-                        planetCopy.meshRenderers = planetOrig.meshRenderers;
-                        //planetCopy.meshColliders = planetOrig.meshColliders;
-                        planetCopy.dirtyFlags = planetOrig.dirtyFlags;
-                        planetCopy.landPercentDirty = planetOrig.landPercentDirty;
-                        planetCopy.factoryIndex = planetOrig.factoryIndex;
-                        planetCopy.factory = planetOrig.factory;
-                        planetCopy.physics = planetOrig.physics;
-                        planetCopy.audio = planetOrig.audio;
-                        planetCopy.factoryModel = planetOrig.factoryModel;
-                        planetCopy.factoryAudio = planetOrig.factoryAudio;
-                        planetCopy.aux = planetOrig.aux;
-                        planetCopy.gasItems = planetOrig.gasItems;
-                        planetCopy.gasSpeeds = planetOrig.gasSpeeds;
-                        planetCopy.gasHeatValues = planetOrig.gasHeatValues;
-                        planetCopy.gasTotalHeat = planetOrig.gasTotalHeat;
-                        planetCopy.birthPoint = planetOrig.birthPoint;
-                        planetCopy.birthResourcePoint0 = planetOrig.birthResourcePoint0;
-                        planetCopy.birthResourcePoint1 = planetOrig.birthResourcePoint1;
-                        planetCopy.loaded = planetOrig.loaded;
-                        planetCopy.wanted = planetOrig.wanted;
-                        planetCopy.loading = planetOrig.loading;
-                        planetCopy.factoryLoaded = planetOrig.factoryLoaded;
-                        planetCopy.factoryLoading = planetOrig.factoryLoading;
-                        //planetCopy.kEnterAltitude = planetOrig.kEnterAltitude;
-
-                        QuickPlanetLoad(planetCopy);
-                        CapturePlanetResourceData(planetCopy, sb);
-
-                        if (planetResourceData.Count == planetCount)
-                        {
-                            GenerateResourceSpreadsheet();
-                        }
-                        else
-                        {
-                            Logger.LogInfo(planetCopy.displayName + " quick-loaded.");
-                        }
-                    }
-                }
-            }
-            planetComputeThreadState = PlanetModelingManager.ThreadFlag.Ended;
         }
     }
 }
