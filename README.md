@@ -74,7 +74,7 @@ Settings include:
  - **More Data:**  17 parameters, 7 for the star and 10 for the planet, can be configurably enabled.  Less clutter for most people.  Extra data for those that want it.
 
 ## Installation
-This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.11.0 and Dyson Sphere Program 0.8.19.7677 on Windows 10.
+This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.11.0 and Dyson Sphere Program 0.9.26.13034 on Windows 10.
 
 To manually install this mod, add the `DSPResourceSpreadsheetGenMod.dll` to your `%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\` folder.
 
@@ -155,7 +155,7 @@ The source code for this mod is available for download, review and forking on Gi
  - **更多数据**：17个参数可供选择启用，7个恒星参数，10个行星参数，如温度、年龄、颜色等。通常这些参数并没有什么用，但总有人需要。
 
 ## 安装
-本mod需要BepInEx mod插件框架，所以要使用此mod必须先安装BepInEx。请在[用户指南](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1)中查阅BepInEx的安装信息。本mod已在Windows10上经BepInEx x64 5.4.11.0和戴森球计划0.8.19.7677版本进行测试。
+本mod需要BepInEx mod插件框架，所以要使用此mod必须先安装BepInEx。请在[用户指南](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1)中查阅BepInEx的安装信息。本mod已在Windows10上经BepInEx x64 5.4.11.0和戴森球计划0.9.26.13034版本进行测试。
 
 要手动安装本mod，请添加`DSPResourceSpreadsheetGenMod.dll`至`%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\`文件夹。
 
@@ -165,6 +165,9 @@ The source code for this mod is available for download, review and forking on Gi
 在BSD3条例许可下，本mod的源代码可供在[GitHub](https://github.com/GreyHak/dsp-csv-gen)下载、查看、克隆。
 
 ## Change Log
+### v4.0.0
+ - Full credit for this update goes to [starfi5h](https://github.com/starfi5h).
+ - Will now run with Dyson Sphere Program 0.9.26.13034 update.
 ### v3.2.1
  - Added new optional output for the star's maximum dyson sphere shell "orbital radius".
 ### v3.2.0
