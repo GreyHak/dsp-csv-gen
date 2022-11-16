@@ -717,7 +717,21 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 else
                 {
-                    planet.CalcVeinAmounts(ref veinAmounts);
+                    // Modify from PlanetData.CalcVeinAmounts
+                    Array.Clear(veinAmounts, 0, veinAmounts.Length);
+                    VeinGroup[] runtimeVeinGroups = planet.runtimeVeinGroups;
+                    if (runtimeVeinGroups != null)
+                    {
+                        lock (planet.veinGroupsLock)
+                        {
+                            for (int i = 1; i < runtimeVeinGroups.Length; i++)
+                            {
+                                veinAmounts[(int)runtimeVeinGroups[i].type] += runtimeVeinGroups[i].amount;
+                            }
+                        }
+                        veinAmounts[0] = 0L;
+                    }
+
                     EVeinType type = (EVeinType)1;
                     foreach (VeinProto item in LDB.veins.dataArray)
                     {
