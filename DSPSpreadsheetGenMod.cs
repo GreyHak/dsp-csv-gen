@@ -33,11 +33,12 @@ namespace StarSectorResourceSpreadsheetGenerator
     [BepInPlugin(pluginGuid, pluginName, pluginVersion)]
     [BepInDependency("dsp.galactic-scale.2", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInProcess("DSPGAME.exe")]
+    [BepInProcess("Dyson Sphere Program.exe")]
     public class SpreadsheetGenMod : BaseUnityPlugin  // Plugin config: "C:\Program Files (x86)\Steam\steamapps\common\Dyson Sphere Program\BepInEx\config\BepInEx.cfg"
     {
         public const string pluginGuid = "greyhak.dysonsphereprogram.resourcespreadsheetgen";
         public const string pluginName = "DSP Star Sector Resource Spreadsheet Generator";
-        public const string pluginVersion = "4.0.0";
+        public const string pluginVersion = "4.0.1";
 
         public static bool spreadsheetGenRequestFlag = false;
         public static List<PlanetData> planetsToLoad = new List<PlanetData> { };
@@ -717,7 +718,9 @@ namespace StarSectorResourceSpreadsheetGenerator
                 }
                 else
                 {
-                    planet.CalcVeinAmounts(ref veinAmounts);
+                    HashSet<int> tmp_ids = new HashSet<int>();
+                    planet.CalcVeinAmounts(ref veinAmounts, tmp_ids, 0);
+
                     EVeinType type = (EVeinType)1;
                     foreach (VeinProto item in LDB.veins.dataArray)
                     {
