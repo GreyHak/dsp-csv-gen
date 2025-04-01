@@ -41,8 +41,8 @@ namespace StarSectorResourceSpreadsheetGenerator
         public const string pluginVersion = "4.0.1";
 
         public static bool spreadsheetGenRequestFlag = false;
-        public static List<PlanetData> planetsToLoad = new List<PlanetData> { };
-        public static Dictionary<int, string> planetResourceData = new Dictionary<int, string>();
+        public static readonly List<PlanetData> planetsToLoad = new List<PlanetData> { };
+        public static readonly Dictionary<int, string> planetResourceData = new Dictionary<int, string>();
         public static bool checkForPlanetsToUnload = false;
         public static CultureInfo spreadsheetLocale = CultureInfo.CurrentUICulture;
         new internal static ManualLogSource Logger;
@@ -93,7 +93,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             public static BepInEx.Configuration.ConfigEntry<bool> veinCounts;
         }
 
-        private static object planetComputeThreadMutexLock = new object();
+        private static readonly object planetComputeThreadMutexLock = new object();
 
         public void Awake()
         {
@@ -223,7 +223,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 {
                     if (!planetResourceData.ContainsKey(planet.id))
                     {
-                        if (planet.calculated)
+                        if (planet.scanned)
                         {
                             CapturePlanetResourceData(planet, sb);
                         }
@@ -257,7 +257,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 spreadsheetGenRequestFlag = true;
                 foreach (PlanetData planet in planetsToLoad)
                 {
-                    planet.RunCalculateThread();
+                    planet.RunScanThread();
                 }
                 Monitor.Exit(planetComputeThreadMutexLock);
             }
@@ -306,7 +306,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             if (PlanetModelingManager.genPlanetReqList.Count == 0 &&
                 PlanetModelingManager.fctPlanetReqList.Count == 0 &&
                 PlanetModelingManager.modPlanetReqList.Count == 0 &&
-                PlanetModelingManager.calPlanetReqList.Count == 0)
+                PlanetModelingManager.scnPlanetReqList.Count == 0)
             {
                 Logger.LogInfo("Planet modeling reset is not needed.");
                 return;
@@ -314,7 +314,7 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             Logger.LogInfo("Stopping planet modeling thread.");
             PlanetModelingManager.EndPlanetComputeThread();
-            PlanetModelingManager.EndPlanetCalculateThread();
+            PlanetModelingManager.EndPlanetScanThread();
             Thread.Sleep(100);
 
             uint sleepIterationCount = 1;
@@ -328,7 +328,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             PlanetModelingManager.genPlanetReqList.Clear();  // RequestLoadStar or RequestLoadPlanet -> PlanetComputeThreadMain
             PlanetModelingManager.fctPlanetReqList.Clear();  // RequestLoadPlanetFactory -> LoadingPlanetFactoryCoroutine
             PlanetModelingManager.modPlanetReqList.Clear();  // ModelingPlanetCoroutine -> ModelingPlanetMain
-            PlanetModelingManager.calPlanetReqList.Clear();  // RequestCalcStar or RequestCalcPlanet -> PlanetComputeThreadMain
+            PlanetModelingManager.scnPlanetReqList.Clear();  // RequestCalcStar or RequestCalcPlanet -> PlanetComputeThreadMain
 
             if (PlanetModelingManager.currentModelingPlanet != null)
             {
@@ -372,17 +372,17 @@ namespace StarSectorResourceSpreadsheetGenerator
 
             Logger.LogInfo("Restarting planet modeling thread.");
             PlanetModelingManager.StartPlanetComputeThread();
-            PlanetModelingManager.StartPlanetCalculateThread();
+            PlanetModelingManager.StartPlanetScanThread();
         }
 
-        [HarmonyTranspiler, HarmonyPatch(typeof(PlanetModelingManager), "PlanetCalculateThreadMain")]
-        public static IEnumerable<CodeInstruction> PlanetCalculateThreadMain_Transpiler(IEnumerable<CodeInstruction> instructions)
+        [HarmonyTranspiler, HarmonyPatch(typeof(PlanetModelingManager), nameof(PlanetModelingManager.PlanetScanThreadMain))]
+        public static IEnumerable<CodeInstruction> PlanetScanThreadMain_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             // Use transpiler due to PlanetData.NotifyCalculated is inlined
             try
             {
                 CodeMatcher matcher = new CodeMatcher(instructions)
-                    .MatchForward(true, new CodeMatch(i => i.opcode == OpCodes.Callvirt && ((MethodInfo)i.operand).Name == "NotifyCalculated"))
+                    .MatchForward(true, new CodeMatch(i => i.opcode == OpCodes.Callvirt && ((MethodInfo)i.operand).Name == nameof(PlanetData.NotifyScanEnded)))
                     .Advance(1);
 
                 matcher.InsertAndAdvance(
@@ -406,11 +406,14 @@ namespace StarSectorResourceSpreadsheetGenerator
                                 }
 
                                 // Free resource to reduce RAM usage
-                                planet.data.Free();
-                                planet.data = null;
+                                if (planet.data != null)
+                                {
+                                    planet.data.Free();
+                                    planet.data = null;
+                                }
                                 planet.modData = null;
                                 planet.aux = null;
-                                planet.calculated = false;
+                                planet.scanned = false;
                             }
                         }
                         Monitor.Exit(planetComputeThreadMutexLock);
@@ -719,7 +722,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                 else
                 {
                     HashSet<int> tmp_ids = new HashSet<int>();
-                    planet.CalcVeinAmounts(ref veinAmounts, tmp_ids, 0);
+                    planet.SummarizeVeinAmountsByFilter(ref veinAmounts, tmp_ids, 0);
 
                     EVeinType type = (EVeinType)1;
                     foreach (VeinProto item in LDB.veins.dataArray)
@@ -750,7 +753,7 @@ namespace StarSectorResourceSpreadsheetGenerator
                         type++;
                     }
                 }
-                foreach (int item in gases)
+                foreach (int _ in gases)
                 {
                     escapeAddValue(sb, "0");
                 }
@@ -877,7 +880,7 @@ namespace StarSectorResourceSpreadsheetGenerator
             return Sprite.Create(tex, new Rect(0f, 0f, 48f, 48f), new Vector2(0f, 0f), 1000);
         }
 
-        [HarmonyPrefix, HarmonyPatch(typeof(PlanetModelingManager), "ModelingPlanetMain")]
+        [HarmonyPrefix, HarmonyPatch(typeof(PlanetModelingManager), nameof(PlanetModelingManager.ModelingPlanetMain))]
         public static bool PlanetModelingManager_ModelingPlanetMain_Prefix(PlanetData planet)
         {
             /******************************************************************/
