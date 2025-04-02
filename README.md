@@ -74,7 +74,7 @@ Settings include:
  - **More Data:**  17 parameters, 7 for the star and 10 for the planet, can be configurably enabled.  Less clutter for most people.  Extra data for those that want it.
 
 ## Installation
-This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.11.0 and Dyson Sphere Program 0.9.27.15033 on Windows 10.
+This mod uses the BepInEx mod plugin framework.  So BepInEx must be installed to use this mod.  Find details for installing BepInEx [in their user guide](https://bepinex.github.io/bepinex_docs/master/articles/user_guide/installation/index.html#installing-bepinex-1).  This mod was tested with BepInEx x64 5.4.23.2 and Dyson Sphere Program 0.10.32.25779 on Windows 10.
 
 To manually install this mod, add the `DSPResourceSpreadsheetGenMod.dll` to your `%PROGRAMFILES(X86)%\Steam\steamapps\common\Dyson Sphere Program\BepInEx\plugins\` folder.
 
@@ -165,6 +165,10 @@ The source code for this mod is available for download, review and forking on Gi
 在BSD3条例许可下，本mod的源代码可供在[GitHub](https://github.com/GreyHak/dsp-csv-gen)下载、查看、克隆。
 
 ## Change Log
+### v4.0.2
+ - Full credit for this update goes to [starfi5h](https://github.com/starfi5h).
+ - Will now run with Dyson Sphere Program 0.10.32.25779 update.
+ - Non-functional coding-style improvements
 ### v4.0.1
  - Will now run with Dyson Sphere Program 0.9.27.15033 update.
  - Xbox compatibility.
